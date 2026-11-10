@@ -39,11 +39,28 @@ def demo_logins_enabled() -> bool:
     return os.environ.get("SP_DEMO_LOGINS", "1") != "0"
 
 
+def allowed_origins() -> set[str]:
+    """Sites allowed to send changes, besides the server's own address.
+
+    The development frontend runs on port 5173 and passes calls on to the API,
+    so the browser's Origin (port 5173) differs from the API's own host.
+    Set SP_ALLOWED_ORIGINS (comma-separated host:port) for any other address.
+    """
+    extra = os.environ.get("SP_ALLOWED_ORIGINS", "localhost:5173,127.0.0.1:5173")
+    return {item.strip() for item in extra.split(",") if item.strip()}
+
+
+def origin_allowed(origin: str, request: Request) -> bool:
+    site = urlparse(origin).netloc
+    own = {request.headers.get("host"), request.headers.get("x-forwarded-host")}
+    return site in own or site in allowed_origins()
+
+
 async def security_middleware(request: Request, call_next):
     # A browser sends Origin on cross-site POSTs. If it names another site, refuse.
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         origin = request.headers.get("origin")
-        if origin and urlparse(origin).netloc != request.headers.get("host"):
+        if origin and not origin_allowed(origin, request):
             return JSONResponse({"detail": "This request came from another site and was refused."}, status_code=403,
                                 headers=HEADERS)
     response = await call_next(request)

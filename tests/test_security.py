@@ -44,6 +44,15 @@ def test_posts_from_another_site_are_refused():
     assert evil.status_code == 403
     same = client.post("/api/fallback", json={"use_baseline": False}, headers={"Origin": "http://testserver"})
     assert same.status_code == 200
+    # The development frontend (port 5173) passes calls on to the API and must be allowed.
+    dev = client.post("/api/fallback", json={"use_baseline": False}, headers={"Origin": "http://localhost:5173"})
+    assert dev.status_code == 200
+
+
+def test_sign_in_works_from_the_development_frontend():
+    reply = TestClient(app).post("/api/login", json={"username": "amina", "password": PASSWORDS["amina"]},
+                                 headers={"Origin": "http://localhost:5173", "Host": "127.0.0.1:8000"})
+    assert reply.status_code == 200
 
 
 def test_wrong_passwords_are_limited():
