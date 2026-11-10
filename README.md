@@ -55,7 +55,7 @@ where each week's units go.
     Kenyan calendar, to be confirmed for each deployment.
 
 Demo video (3 minutes or less): to add (script in `docs/DEMO_SCRIPT.md`)
-Live demo: to add after deployment (steps in `docs/DEPLOY.md`)
+Live demo: https://sanguis-providus.vercel.app (how it is hosted: `docs/DEPLOY.md`)
 
 Test log-ins (demo accounts): one tap on the sign-in cards, or by name and password:
 `amina` / `thika-demo`, `joseph` / `maternity-demo`, `grace` / `nairobi-demo`.
