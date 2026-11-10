@@ -43,6 +43,6 @@ From now on every push to `main` redeploys both parts.
 | `SP_DEMO_LOGINS` | `1` shows the three test accounts |
 
 ## Good to know
-- Decisions made on the hosted demo are kept until the next deploy, which rebuilds the database.
+- The hosted demo starts from a freshly built database after every deploy or restart, so decisions made on it are cleared then.
 - The Oracle sync is run from a laptop that holds the wallet. The hosted demo does not need it.
 - For the recorded video, run the app locally (`python scripts/dev.py`). It is the fastest and safest.
