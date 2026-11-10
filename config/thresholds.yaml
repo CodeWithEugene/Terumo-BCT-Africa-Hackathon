@@ -1,0 +1,37 @@
+# Settings staff can change without touching code.
+
+forecast:
+  horizon_days: 14
+  baseline_weeks: 4                 # the "usual way": same weekday over this many past weeks
+  common_groups: ["O+", "A+", "B+"] # every other group is reported as "rare"
+
+backtest:
+  first_origin: 2026-07-06          # weekly origins (Mondays), both ends included
+  last_origin: 2026-10-19
+
+# --- Alerts -------------------------------------------------------------------
+alerts:
+  order_lead_days: 1            # an order placed today can change deliveries from tomorrow on
+  delivery_learning_weeks: 8    # weeks used to learn the usual quantity of a delivery
+  delivery_day_min_share: 0.5   # only used when a hospital has no delivery schedule on file
+  act_shortfall_units: 1.0      # Act: expected to be at least this many units short before the next delivery
+  empty_shelf_units_at_risk: 0.5  # Act: shelf will not last the emergency lead time and this much use is expected
+  watch_shortfall_units: 1.0    # Watch: this many units short before the next delivery in a busy spell
+  watch_horizon_shortfall_units: 1.0  # Watch: this many units short later in the 14 days
+  watch_cover_days: 2.0         # Watch: cover under this many days (when use is expected)
+  watch_min_weekly_use: 1.0     # ...and at least this many units expected in the next 7 days
+  school_notice_days: 28        # mention a school break this many days ahead
+  trend_min_change_pct: 20      # mention a change in requests only if at least this big
+  trend_min_units: 4            # ...and at least this many units in one of the two periods
+  baseline_rule_cover_days: 3.0 # the simple rule we compare against: cover under X days on the 28-day average
+  event_window_days: 7          # alert check: was a request not fully met within this many days?
+
+# --- Orders -------------------------------------------------------------------
+orders:
+  max_cover_days: 14            # never suggest more than this many days of expected use (limits wastage)
+
+# Minimum stock per blood group, set by staff. No forecast can lower it.
+# Stock under the minimum is at least "Watch", and suggested orders top up to it.
+minimum_stock:
+  RBC: {"O-": 2}
+  FFP: {}
