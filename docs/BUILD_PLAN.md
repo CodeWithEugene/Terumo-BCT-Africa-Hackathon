@@ -411,3 +411,36 @@ and fast: people use them every morning, sometimes on 3G.
   licence in the README under "Data". Ask Linet before adding any photo.
 - Keep all of it light: SVG and CSS only, no 3D engine, no video. Still images when
   `prefers-reduced-motion` is set.
+
+## 9. Amendments agreed on 10 Nov (these override the sections above where they differ)
+
+From Linet's and the pipeline's look at the data (numbers in `docs/DATA_FACTS.md`):
+
+1. **The value is on the supply side.** Weekly demand is nearly flat (549 to 749 units a week, median
+   655). Weekly collections swing from 345 to 2,230. The weekly unmet rate follows regional centre
+   red cell stock (correlation -0.82) and routine deliveries (-0.73). A 4-week average will be hard
+   to beat on demand alone, and we will say so if it is not beaten.
+   - **New Step 4b: supply forecast (75 min), before Step 5.**
+     - Forecast cleared red cell units per regional centre per week, 4 weeks ahead, from the drive
+       schedule, the school calendar, venue-type yield, pass rates and the testing wait.
+       Baseline: 4-week average of cleared units. Same weekly origins as the demand backtest.
+     - Project regional centre red cell stock forward from that.
+     - Project what each hospital will actually receive: its usual delivery scaled by how well the
+       centre can supply. Baseline: the hospital's 4-week average of routine units received.
+     - Feed the projected deliveries into the stock projection and rerun the alert check.
+     - Report baseline against model for supply, for deliveries received and for alerts, in
+       `docs/RESULTS.md`, next to the demand results. Add a supply reason to the alert reasons.
+     - **Cut line:** centre-level supply forecast and its comparison only; hospital deliveries stay
+       on the usual quantity.
+   - Step 7 keeps the demand model and its comparison. Step 8 reuses the Step 4b supply forecast.
+2. **What counts as a shortage.** Hospitals sit at zero stock for a group on a large share of days,
+   so zero stock is not the event. The event we warn about is a request that was not fully met, or
+   that needed an emergency delivery, within 7 days. Alerts are evaluated against that.
+   The stricter "not fully met only" result is reported beside it.
+3. **Demo dates.** Default as-of date is **Monday 28 Sep 2026** (the week before the October
+   deterioration). Monday 30 Mar 2026 (before the April holiday) is a second prepared date.
+   August is not a shortage month in this data. The backtest window stays 6 Jul to 19 Oct 2026.
+4. **Red cell cover** counts red cell units and whole blood together (6,349 of 27,273 units issued
+   for red cell requests were whole blood). Hospitals hold no platelets; platelet demand is shown
+   without a stock projection.
+
