@@ -52,3 +52,9 @@ model:
   validation_origins: [2026-06-01, 2026-06-08, 2026-06-15, 2026-06-22]   # used only to choose rare_method
   max_iter: 150
   learning_rate: 0.06
+
+# --- Fair-share allocation (red cells) ------------------------------------------------
+allocation:
+  demand_days: 28            # a hospital's need is its average daily requests over this many past days
+  spare_cover_days: 7        # "spare" means units beyond this many days of a hospital's own use
+  replay_first_day: 2026-07-06   # the replay covers the same period as the forecast tests

@@ -232,6 +232,53 @@ export function RegionPage({
             </ul>
           </section>
 
+          {/* Fair-share allocation */}
+          <section className="mt-10">
+            <SectionLabel>{t.region.fairLabel}</SectionLabel>
+            <p className="mt-3 max-w-[76ch] text-sm">{view.allocation.text}</p>
+            {view.allocation.lowest_cover_usual !== null && view.allocation.lowest_cover_fair !== null && (
+              <p className="mt-2 text-base font-medium text-ink">
+                {t.region.fairLowest(String(view.allocation.lowest_cover_usual), String(view.allocation.lowest_cover_fair))}
+              </p>
+            )}
+            <div className="mt-3 rounded-card border border-line">
+              <div className="hidden grid-cols-[minmax(0,1.6fr)_repeat(5,minmax(0,1fr))] gap-3 border-b border-line bg-bg-alt px-4 py-2 text-[0.8125rem] font-medium text-ink md:grid">
+                <span>{t.region.fairCols.hospital}</span>
+                <span>{t.region.fairCols.shelf}</span>
+                <span>{t.region.fairCols.use}</span>
+                <span>{t.region.fairCols.usual}</span>
+                <span>{t.region.fairCols.fair}</span>
+                <span>{t.region.fairCols.cover}</span>
+              </div>
+              {view.allocation.rows.map((r) => (
+                <div key={r.facility_id} className="grid grid-cols-2 gap-x-3 gap-y-1 border-b border-line px-4 py-3 text-sm last:border-b-0 md:grid-cols-[minmax(0,1.6fr)_repeat(5,minmax(0,1fr))] md:items-center">
+                  <span className="col-span-2 font-medium text-ink md:col-span-1">{r.name}</span>
+                  <span><span className="text-[0.8125rem] text-muted md:hidden">{t.region.fairCols.shelf}: </span>{r.on_shelf}</span>
+                  <span><span className="text-[0.8125rem] text-muted md:hidden">{t.region.fairCols.use}: </span>{r.weekly_use}</span>
+                  <span><span className="text-[0.8125rem] text-muted md:hidden">{t.region.fairCols.usual}: </span>{r.usual_units}</span>
+                  <span className="font-medium text-ink">
+                    <span className="text-[0.8125rem] font-normal text-muted md:hidden">{t.region.fairCols.fair}: </span>
+                    {r.fair_units}
+                    {r.change !== 0 && <span className={cx('ml-1.5 text-[0.8125rem] font-normal', r.change > 0 ? 'text-steady' : 'text-body')}>({r.change > 0 ? '+' : '−'}{Math.abs(r.change)})</span>}
+                  </span>
+                  <span className="col-span-2 md:col-span-1">
+                    <span className="text-[0.8125rem] text-muted md:hidden">{t.region.fairCols.cover}: </span>
+                    {t.region.fairDays(r.cover_usual)} → <span className="font-medium text-ink">{t.region.fairDays(r.cover_fair)}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-card border border-line p-4 sm:p-5">
+              {view.allocation.units_moved <= 0 ? (
+                <p className="text-sm">{t.region.fairNone}</p>
+              ) : whatIf ? (
+                <p className="text-sm text-muted">{t.region.clear} the what-if to decide on this plan.</p>
+              ) : (
+                <DecisionBar series={{ ...view.allocation, as_of: view.as_of }} asOf={view.as_of} codes={codes} keys={false} onDecided={() => setTick((n) => n + 1)} />
+              )}
+            </div>
+          </section>
+
           {/* Drive suggestions */}
           <section className="mt-10">
             <SectionLabel>{t.region.suggestLabel}</SectionLabel>

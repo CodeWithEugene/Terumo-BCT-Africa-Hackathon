@@ -24,7 +24,7 @@ def supply_request(user: User, decision_id: int) -> dict:
     if not rows or rows[0]["facility_id"] not in scope(user):
         raise HTTPException(status_code=404, detail="That decision was not found.")
     d = rows[0]
-    if d["suggestion_kind"] == "drive" or d["action"] == "reject" or d["final_quantity"] <= 0:
+    if d["suggestion_kind"] in ("drive", "allocation") or d["action"] == "reject" or d["final_quantity"] <= 0:
         raise HTTPException(status_code=400, detail="Only an accepted or changed order can be shown as a supply request.")
     facility = get_world().facility
     hospital, centre = facility.loc[d["facility_id"]], facility.loc[facility.at[d["facility_id"], "region"]]

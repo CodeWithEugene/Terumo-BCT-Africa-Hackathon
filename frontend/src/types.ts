@@ -48,7 +48,7 @@ export interface SuggestionPart {
 }
 
 export interface Suggestion {
-  kind: 'order' | 'early_delivery' | 'drive'
+  kind: 'order' | 'early_delivery' | 'drive' | 'allocation'
   unit_word?: string
   title: string
   needs_approval: string | null
@@ -222,6 +222,7 @@ export interface RegionView extends ModeInfo {
     weeks: { week: number; demand: number; cleared: number; short: number; stock_end: number }[]
   }[]
   drive_suggestions: DriveSuggestion[]
+  allocation: AllocationPlan
   supply_change_pct: number
   rates: { units_per_donation: number; median_testing_wait_days: number }
   what_if: { date: string; donors: number }[]
@@ -236,4 +237,29 @@ export interface Overview extends ModeInfo {
     next_delivery_label: string | null
     groups: { id: string; blood_group: string; blood_group_label: string; status: Status; status_label: string; cover_days: number | null; cover_capped: boolean; units_on_shelf: number }[]
   })[]
+}
+
+export interface AllocationPlan {
+  id: string
+  as_of: string
+  rows: {
+    facility_id: string
+    name: string
+    on_shelf: number
+    weekly_use: number
+    cover_now: number | null
+    usual_units: number
+    fair_units: number
+    cover_usual: number | null
+    cover_fair: number | null
+    change: number
+  }[]
+  total_units: number
+  units_moved: number
+  lowest_cover_usual: number | null
+  lowest_cover_fair: number | null
+  text: string
+  suggestion: Suggestion
+  decision?: Decision | null
+  action_label?: string
 }

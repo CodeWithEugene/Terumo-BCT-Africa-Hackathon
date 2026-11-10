@@ -136,7 +136,7 @@ export function DecisionBar({
             {t.detail.undo(undoLeft)}
           </Button>
         )}
-        {suggestion.kind !== 'drive' && decision.action !== 'reject' && decision.final_quantity > 0 && (
+        {suggestion.kind !== 'drive' && suggestion.kind !== 'allocation' && decision.action !== 'reject' && decision.final_quantity > 0 && (
           <Button
             variant="text"
             icon="code"
@@ -193,7 +193,7 @@ export function DecisionBar({
             <div key={part.label} className="flex justify-between gap-4 border-t border-line py-1.5">
               <dt>{part.label}</dt>
               <dd className="shrink-0 font-medium text-ink">
-                {suggestion.kind === 'drive' ? '' : part.units < 0 ? '−' : '+'}
+                {suggestion.kind === 'drive' || suggestion.kind === 'allocation' ? '' : part.units < 0 ? '−' : '+'}
                 {Math.abs(part.units)}
               </dd>
             </div>

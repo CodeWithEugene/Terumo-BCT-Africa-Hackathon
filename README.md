@@ -50,6 +50,9 @@ they supply.
     settings the server enforces), where data is stored, cookies, what to do if something leaks, a data-flow
     diagram, and a privacy notice in English and Swahili.
   - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
+  - **Fair-share allocation.** On 61% of the days a hospital ran short of a blood group, other hospitals in
+    its region held spare units of it. The regional view proposes how to share each week's units by days of
+    cover, and a replay of the test period compares that with what really happened (see AI and data).
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
   - The central database sync is written and tested up to the connection, but has **not been run against a
@@ -159,6 +162,10 @@ Test period: 16 Mondays from 6 July to 19 October 2026. On each date the forecas
   - Demand (7-day totals): baseline 71.3% error vs ours 67.9%. A small gain: demand is nearly flat all year.
   - Early warning: the simple rule warned before 65% of real shortages, ours before 76%, with about the same
     share of false alarms (27% and 28% of warnings were followed by a real shortage).
+  - Fair-share allocation (replay, 6 July to 31 October 2026, same blood and same requests): red cell units a
+    hospital's own shelf could not supply fell from 2,078 to 1,410 (32% fewer), and units expired on hospital
+    shelves from 1,415 to 1,256. The replay's own baseline (20.8% not from the shelf) is close to the real
+    records (20.2%). The best-stocked hospitals lose cover, including the national referral hospital.
 - How a user sees the reason for a recommendation: two or three short sentences beside each alert, built by
   templates from computed numbers, and the suggested quantity shown as a sum of its parts.
 - Who approves it (Accept / Change / Reject): the signed-in officer. Change and Reject need a reason.
@@ -209,6 +216,8 @@ Data lead: to confirm (one named person from the table above).
 ## Known limits and next steps
 - **Accuracy:** most warnings are still false alarms (about 28% are followed by a real shortage), and the
   median warning comes 1 to 2 days ahead. The demand model beats the 4-week average only slightly.
+- **Fair share is a replay, not a trial.** It assumes units can be re-split within a delivery day, ignores
+  vehicle capacity, and has no protected minimum for referral hospitals. It is a proposal a person approves.
 - **Synthetic data:** every number describes the model dataset, not real hospitals. The approach needs testing
   on real stock and request records.
 - **Hospital deliveries** are only slightly better predicted than by their 4-week average; some hospitals in

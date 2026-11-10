@@ -184,3 +184,59 @@ Baseline: stock stays as it is today.
 | sub_county_hospital | Simple rule (cover under 3 days on the 28-day average) | 10 | 22 | 30% | 14% | 1 |
 | sub_county_hospital | Our alert (Act or Watch), deliveries from the supply forecast, forecast: m1 | 10 | 23 | 40% | 17% | 1 |
 
+## Fair-share allocation (red cells): a replay with the same blood
+
+**The finding.** On 61.2% of the 3,279 days a hospital ran short of a blood group, other hospitals in the same region together held at least 2 spare units of that group (spare = beyond 7 days of their own average use).
+
+**The test.** 2026-07-06 to 2026-10-31. Same requests, same units leaving each regional centre on the same days, same delivery rounds. Each hospital shelf is walked forward twice: sending every unit where it really went, and giving each unit to the hospital with the fewest days of cover. Emergency deliveries are left out of both runs. The rule sees only earlier days and nothing was tuned on this period.
+
+| | As it happened | Fair share | Change |
+| --- | --- | --- | --- |
+| Units a hospital's own shelf could not supply | 2,078 | 1,410 | -32% |
+| As a share of units requested | 20.8% | 14.1% | |
+| Hospital-group-days with a shortfall | 943 | 630 | -33% |
+| Units expired on hospital shelves | 1,415 | 1,256 | -11% |
+
+**Is the replay realistic?** In the real records for this period, 20.2% of requested red cell units did not come from the hospital's own shelf. The replay's "as it happened" run gives 20.8%.
+
+**Who gains and who loses.** The gain is not free. Hospitals that were starved gain most; the best-stocked hospitals, including the national referral hospital, lose cover. A real rule would protect a minimum for referral hospitals. We did not add that here, because it would mean tuning on the test period.
+
+### By hospital (share of requested units the shelf could not supply)
+
+| Hospital | Units requested | As it happened | Fair share |
+| --- | --- | --- | --- |
+| Kajiado County Referral Hospital | 156 | 94.9% | 25.0% |
+| Thika Level 5 Hospital | 360 | 89.7% | 16.4% |
+| Kiambu County Referral Hospital | 274 | 87.6% | 20.4% |
+| Garissa County Referral Hospital | 177 | 87.6% | 35.0% |
+| Marsabit County Referral Hospital | 108 | 65.7% | 76.9% |
+| Westlands Private Hospital | 354 | 46.6% | 21.2% |
+| Kericho County Referral Hospital | 192 | 46.4% | 17.2% |
+| Isiolo County Referral Hospital | 114 | 45.6% | 28.1% |
+| Msambweni County Referral Hospital | 157 | 34.4% | 8.3% |
+| Lodwar County Referral Hospital | 176 | 33.0% | 21.0% |
+| Kapsabet County Hospital | 159 | 23.9% | 11.3% |
+| Meru Teaching and Referral Hospital | 271 | 22.1% | 19.6% |
+| Kilifi County Hospital | 224 | 21.9% | 8.0% |
+| Narok County Referral Hospital | 119 | 21.0% | 22.7% |
+| Highlands Private Hospital | 150 | 20.7% | 8.0% |
+| Naivasha Sub-County Hospital | 223 | 20.2% | 16.6% |
+| Iten County Hospital | 109 | 19.3% | 19.3% |
+| Kitui County Referral Hospital | 234 | 17.9% | 22.6% |
+| Voi County Hospital | 190 | 15.8% | 13.2% |
+| Eastlands County Hospital | 333 | 14.7% | 19.2% |
+| City Maternity Hospital | 411 | 14.4% | 21.4% |
+| Embu Level 5 Hospital | 350 | 14.0% | 18.3% |
+| Lake Region Mission Hospital | 224 | 12.9% | 11.2% |
+| Siaya County Referral Hospital | 262 | 9.9% | 11.8% |
+| Migori County Referral Hospital | 194 | 8.2% | 9.3% |
+| Busia County Referral Hospital | 173 | 7.5% | 7.5% |
+| Kisumu County Referral Hospital | 532 | 6.8% | 7.0% |
+| Western Rift Teaching and Referral Hospital | 860 | 5.7% | 6.3% |
+| Nakuru County Referral Hospital | 516 | 4.5% | 5.6% |
+| Homa Bay County Referral Hospital | 292 | 3.8% | 3.1% |
+| Coast Teaching and Referral Hospital | 737 | 1.6% | 3.8% |
+| National Referral Hospital (Nairobi) | 1,364 | 0.7% | 14.4% |
+
+Limits: a replay is a model of the shelves, not the real world. It assumes units can be re-split within a delivery day, ignores vehicle capacity, and takes the centre's total output as given.
+

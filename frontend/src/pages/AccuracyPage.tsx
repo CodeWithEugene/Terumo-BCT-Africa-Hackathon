@@ -16,6 +16,8 @@ interface Accuracy extends ModeInfo {
   test_period: { first: string; last: string; horizon_days: number } | null
   alert_rule_cover_days?: number
   rare_note: Record<string, string> | null
+  allocation?: { policy: string; facility_id: string; name: string; units_requested: number; units_short: number; units_expired: number; short_pct: number }[]
+  allocation_fact?: Record<string, string>
 }
 
 const pct = (v: number | undefined) => (v === undefined ? '–' : `${Math.round(v * 100)}`)
@@ -107,6 +109,15 @@ export function AccuracyPage({ onMode }: { onMode: (m: ModeInfo) => void }) {
   const types = data.forecast.filter((m) => m.segment_type === 'facility type' && m.model === 'baseline')
   const typeOurs = (segment: string) => data.forecast.find((m) => m.segment_type === 'facility type' && m.model === 'm1' && m.segment === segment)
 
+  const fmt = (n: number) => Math.round(n).toLocaleString('en-GB')
+  const alloc = data.allocation ?? []
+  const pick = (policy: string, id: string) => alloc.find((r) => r.policy === policy && r.facility_id === id)
+  const fairAll = pick('actual', 'ALL') && pick('fair', 'ALL') ? { actual: pick('actual', 'ALL')!, fair: pick('fair', 'ALL')! } : null
+  const movers = alloc
+    .filter((r) => r.policy === 'actual' && r.facility_id !== 'ALL')
+    .map((r) => ({ name: r.name, before: r.short_pct, after: pick('fair', r.facility_id)?.short_pct ?? r.short_pct }))
+    .sort((a, b) => a.after - a.before - (b.after - b.before))
+
   return (
     <div>
       <SectionLabel>{t.accuracy.label}</SectionLabel>
@@ -121,6 +132,37 @@ export function AccuracyPage({ onMode }: { onMode: (m: ModeInfo) => void }) {
         usualText={`${t.accuracy.alertUsual(data.alert_rule_cover_days ?? 3)} ${t.accuracy.alertUsualPrecision(`${pct(simple?.precision)}%`)}`}
         oursText={t.accuracy.alertOurs(`${pct(ours?.precision)}%`)} />
       <p className="mt-3 text-[0.8125rem] text-muted">{t.accuracy.shortage}</p>
+
+      {fairAll && (
+        <>
+          <Compare label={t.accuracy.shareLabel} unit={t.accuracy.shareUnit} suffix="%" usual={fairAll.actual.short_pct / 100} ours={fairAll.fair.short_pct / 100}
+            usualText={t.accuracy.shareUsual(fmt(fairAll.actual.units_short), fmt(fairAll.actual.units_expired))}
+            oursText={t.accuracy.shareOurs(fmt(fairAll.fair.units_short), fmt(fairAll.fair.units_expired))} />
+          {data.allocation_fact && (
+            <p className="mt-3 max-w-[76ch] text-sm font-medium text-ink">
+              {t.accuracy.shareFinding(data.allocation_fact.with_spare_elsewhere_pct, fmt(Number(data.allocation_fact.shortage_days)))}
+            </p>
+          )}
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {[{ title: t.accuracy.shareGain, rows: movers.slice(0, 3) }, { title: t.accuracy.shareLose, rows: movers.slice(-3).reverse() }].map((block) => (
+              <div key={block.title} className="rounded-card border border-line p-4">
+                <p className="text-sm font-medium text-ink">{block.title}</p>
+                {block.rows.map((m) => (
+                  <p key={m.name} className="mt-1.5 flex justify-between gap-3 border-t border-line pt-1.5 text-sm">
+                    <span className="min-w-0 truncate">{m.name}</span>
+                    <span className="shrink-0 text-ink">{m.before.toFixed(0)}% → <span className="font-medium">{m.after.toFixed(0)}%</span></span>
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+          {data.allocation_fact && (
+            <p className="mt-3 max-w-[76ch] text-[0.8125rem] text-muted">
+              {t.accuracy.shareCaveat(data.allocation_fact.real_not_from_shelf_pct, fairAll.actual.short_pct.toFixed(1))}
+            </p>
+          )}
+        </>
+      )}
 
       <section className="mt-10">
         <SectionLabel>{t.accuracy.fairLabel}</SectionLabel>

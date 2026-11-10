@@ -114,6 +114,10 @@ def render(db_path: Path | None = None) -> str:
         from backend.engine.alert_backtest import results_section
 
         lines += results_section(db_path)
+    if table_exists("allocation_replay", db_path):
+        from backend.engine.allocation import results_section as allocation_section
+
+        lines += allocation_section(db_path)
     return "\n".join(lines)
 
 

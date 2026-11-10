@@ -283,6 +283,9 @@ def build(db_path: Path | None = None, raw_dir: Path | None = None, verbose: boo
             say(f"Backtesting the '{name}' forecast...")
             backtest.run(name, db_path=db_path, write_docs=write_docs, verbose=False)
             alert_backtest.run(name, db_path=db_path, write_docs=write_docs, verbose=False)
+        from backend.engine import allocation
+        say("Replaying the fair-share allocation...")
+        allocation.run(db_path=db_path, write_docs=write_docs, verbose=False)
         say("Results written to docs/RESULTS.md")
     say(f"Done in {time.time() - started:.0f} seconds.")
     return counts

@@ -106,12 +106,15 @@ def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None =
             },
         })
 
+    from backend.engine import allocation as fair
+    proposal = fair.propose(snap, centre, made.shipped[c, :, 0], made.received[:, :, 0], hist.hospitals, hist.groups)
+
     total_expected, total_usual = sum(w["expected_cleared"] for w in week_rows), sum(w["usual_cleared"] for w in week_rows)
     change = round(100 * (total_expected / total_usual - 1)) if total_usual else 0
     return {
         "centre": {"facility_id": centre, "name": world.facility.at[centre, "name"],
                    "region_name": world.facility.at[centre, "region_name"]},
-        "weeks": week_rows, "groups": groups, "drive_suggestions": suggestions,
+        "weeks": week_rows, "groups": groups, "drive_suggestions": suggestions, "allocation": proposal,
         "supply_change_pct": change,
         "rates": {"units_per_donation": round(per_donation, 2),
                   "median_testing_wait_days": made.rates["median_testing_wait_days"]},

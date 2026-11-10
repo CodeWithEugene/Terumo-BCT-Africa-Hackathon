@@ -44,7 +44,7 @@ def load_world(db_path: Path | None = None) -> World:
                 parse_dates=["collection_date", "expiry_date", "status_date", "available_date"],
                 path=db_path)
     unit["product"] = unit["component"].map(product_of)
-    move = read("SELECT unit_id, to_facility_id, dispatched_at, received_at FROM unit_move",
+    move = read("SELECT unit_id, to_facility_id, transfer_type, dispatched_at, received_at FROM unit_move",
                 parse_dates=["dispatched_at", "received_at"], path=db_path)
     move["at"] = move["received_at"].fillna(move["dispatched_at"])
     calendar = read("SELECT * FROM calendar", parse_dates=["date"], path=db_path).set_index(["region", "date"]).sort_index()

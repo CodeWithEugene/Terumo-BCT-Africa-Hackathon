@@ -216,7 +216,7 @@ def region(user: User, as_of: str | None, extra_donors: int | None = None, extra
         extra = [{"date": str(date.date()), "centre": user.facility_id, "donors": int(extra_donors)}]
     view = regional_view(snap, user.facility_id, extra)
     open_decisions = _decisions_for(str(snap.as_of.date()), user.facility_id)
-    for item in view["drive_suggestions"]:
+    for item in view["drive_suggestions"] + [view["allocation"]]:
         item["decision"] = open_decisions.get(item["id"])
         item["action_label"] = "Request approval"
     return {**mode_info(snap), "as_of": str(snap.as_of.date()), **view}
@@ -231,9 +231,10 @@ def _record_drive_decision(user: User, body: dict) -> dict:
     if user.role != "regional_officer" or centre != user.facility_id:
         raise HTTPException(status_code=403, detail="You do not have access to that centre.")
     snap = snapshot(body.get("as_of"))
-    item = next((s for s in regional_view(snap, centre)["drive_suggestions"] if s["id"] == body["series_id"]), None)
-    if item is None:
-        raise HTTPException(status_code=400, detail="There is no drive suggestion for that week.")
+    view = regional_view(snap, centre)
+    item = next((s for s in view["drive_suggestions"] + [view["allocation"]] if s["id"] == body["series_id"]), None)
+    if item is None or item["suggestion"]["quantity"] <= 0:
+        raise HTTPException(status_code=400, detail="There is no suggestion to decide on for that week.")
     suggestion = item["suggestion"]
     if action in ("change", "reject"):
         if body.get("reason_code") not in {r["code"] for r in access["reason_codes"][action]}:
@@ -254,12 +255,13 @@ def _record_drive_decision(user: User, body: dict) -> dict:
             "component, blood_group, suggestion_kind, for_date, status_seen, suggested_quantity, action, "
             "final_quantity, reason_code, note, mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (now(), user.user_id, user.username, user.display_name, user.role, as_of, item["id"], centre, "RBC", "all",
-             "drive", suggestion["for_date"], "watch", suggestion["quantity"], action, int(quantity),
+             suggestion["kind"], suggestion["for_date"], "watch", suggestion["quantity"], action, int(quantity),
              body.get("reason_code"), note, snap.forecast.mode))
         decision_id = cursor.lastrowid
         _audit(conn, user, "decision", facility_id=centre, series_id=item["id"], as_of=as_of,
-               saw={"text": item["text"], "venues": item["venue_text"], "suggested_quantity": suggestion["quantity"],
-                    "sum": suggestion["sum_text"], "suggestion_kind": "drive", "mode": snap.forecast.mode},
+               saw={"text": item["text"], "venues": item.get("venue_text"), "suggested_quantity": suggestion["quantity"],
+                    "sum": suggestion["sum_text"], "suggestion_kind": suggestion["kind"], "mode": snap.forecast.mode,
+                    "rows": item.get("rows")},
                decided={"action": action, "final_quantity": int(quantity), "decision_id": decision_id,
                         "is_request_for_approval": True},
                reason_code=body.get("reason_code"), note=note)
@@ -268,7 +270,7 @@ def _record_drive_decision(user: User, body: dict) -> dict:
 
 
 def record_decision(user: User, body: dict) -> dict:
-    if "|DRIVE|" in body["series_id"]:
+    if "|DRIVE|" in body["series_id"] or "|ALLOC|" in body["series_id"]:
         return _record_drive_decision(user, body)
     access = config.load_settings("access")
     action = body["action"]
@@ -450,5 +452,11 @@ def accuracy() -> dict:
         out["alert_rule_cover_days"] = settings["alerts"]["baseline_rule_cover_days"]
     out["supply"] = json.loads(read("SELECT * FROM supply_metric").to_json(orient="records")) \
         if table_exists("supply_metric") else []
+    if table_exists("allocation_replay"):
+        replay = read("SELECT * FROM allocation_replay")
+        names = get_world().facility["name"]
+        replay["name"] = replay["facility_id"].map(names).fillna("All hospitals")
+        out["allocation"] = json.loads(replay.to_json(orient="records"))
+        out["allocation_fact"] = dict(read("SELECT key, value FROM allocation_fact").to_numpy())
     out["rare_note"] = dict(read("SELECT key, value FROM model_note").to_numpy()) if table_exists("model_note") else None
     return out
