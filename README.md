@@ -57,7 +57,7 @@ where each week's units go.
 Demo video (3 minutes or less): to add (script in `docs/DEMO_SCRIPT.md`)
 Live demo: https://sanguis-providus.vercel.app (how it is hosted: `docs/DEPLOY.md`)
 
-Test log-ins (demo accounts): one tap on the sign-in cards, or by name and password:
+Test log-ins (demo accounts): press **Sign in** and choose a role, or sign in by name and password:
 `amina` / `thika-demo`, `joseph` / `maternity-demo`, `grace` / `nairobi-demo`.
 
 ## How to run it

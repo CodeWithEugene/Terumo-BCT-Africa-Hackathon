@@ -40,7 +40,7 @@ From now on every push to `main` redeploys both parts.
 | `SP_SESSION_SECRET` | Long random text. Render generates it. |
 | `SP_COOKIE_SECURE` | `1` |
 | `SP_ALLOWED_ORIGINS` | The Vercel address, no `https://` |
-| `SP_DEMO_LOGINS` | `1` shows the three test accounts |
+| `SP_DEMO_LOGINS` | `1` lets the demo sign in by role without a password |
 
 ## Good to know
 - The hosted demo starts from a freshly built database after every deploy or restart, so decisions made on it are cleared then.
