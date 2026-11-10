@@ -1,6 +1,8 @@
 """The web API. Run with: python -m uvicorn backend.api.main:app --port 8000"""
 from __future__ import annotations
 
+import threading
+from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -13,9 +15,24 @@ from backend.config import APP_NAME, DB_PATH
 from backend.db.app_tables import ensure_app_tables, set_setting
 from backend.db.core import table_exists
 
-app = FastAPI(title=APP_NAME, docs_url="/api/docs", openapi_url="/api/openapi.json")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """At start-up, load the data into memory in the background so the first brief opens quickly."""
+    def load() -> None:
+        try:
+            if table_exists("demand_daily"):
+                service.get_world()
+        except Exception:  # noqa: BLE001  (a failed warm-up must never stop the server)
+            pass
+
+    threading.Thread(target=load, daemon=True).start()
+    yield
+
+
+app = FastAPI(title=APP_NAME, docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=lifespan)
 
 app.middleware("http")(security.security_middleware)
+
 
 Component = Literal["RBC", "FFP", "PLT"]
 
@@ -61,7 +78,9 @@ def demo_users() -> dict:
     if not security.demo_logins_enabled():
         return {**service.mode_info(), "users": []}
     access = config.load_settings("access")
-    world_names = service.get_world().facility["name"]
+    # A direct, small query: the sign-in screen must not wait for the whole dataset to load.
+    from backend.db.core import read as _read
+    world_names = _read("SELECT facility_id, name FROM facility").set_index("facility_id")["name"]
     return {**service.mode_info(), "users": [
         {"username": u["username"], "display_name": u["display_name"], "role": u["role"],
          "role_label": access["roles"][u["role"]]["label"], "facility_name": world_names[u["facility_id"]]}

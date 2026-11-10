@@ -51,7 +51,12 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
 
         <ul className="mt-8 grid max-w-[880px] gap-3 md:grid-cols-3">
           {accounts === null &&
-            [0, 1, 2].map((i) => <li key={i} className="h-44 animate-pulse rounded-card border border-line bg-white" />)}
+            [0, 1, 2].map((i) => (
+              <li key={i} className="flex h-44 flex-col justify-between rounded-card border border-line bg-white p-5" aria-hidden={i > 0}>
+                <span className="text-sm text-muted">{i === 0 ? 'Loading the test accounts…' : ''}</span>
+                <span className="h-11 animate-pulse rounded-control bg-bg-alt" />
+              </li>
+            ))}
           {accounts?.map((account, i) => (
             <li key={account.username} className="flex flex-col rounded-card border border-line bg-white/95 p-5">
               <p className="text-xs font-medium tracking-[0.06em] text-muted uppercase">{account.role_label}</p>
