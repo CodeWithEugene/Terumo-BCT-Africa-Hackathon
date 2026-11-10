@@ -301,6 +301,34 @@ export const en = {
     next: 'Before real use: a data protection impact assessment, registration with the regulator, written agreements with any hosting company, and an independent security test.',
   },
 
+  landing: {
+    signIn: 'Sign in',
+    scroll: 'Scroll',
+    beats: [
+      {
+        label: 'The problem',
+        title: (oneIn: number) => `1 in ${oneIn} requests for blood is not fully met.`,
+        text: (hours: string, requests: string) =>
+          `When a shelf runs out, an emergency delivery takes a median of ${hours} hours. In the synthetic dataset of ${requests} requests this tool is built on, the shortage is found when the request arrives.`,
+      },
+      {
+        label: 'Seeing it coming',
+        title: () => 'The tool sees the shelf emptying before it does.',
+        text: (drop: string) =>
+          `It forecasts requests for each hospital and blood group, and forecasts supply from the drive schedule: collections fall ${drop}% when schools close. Then it walks every shelf 14 days forward and shows days of cover, with a range.`,
+      },
+      {
+        label: 'A person decides',
+        title: () => 'It suggests. A person decides.',
+        text: () =>
+          'Every suggested order comes with its reasons and its sum. The blood bank officer accepts, changes or rejects it, and the decision is written to a log that cannot be edited. Nothing is ordered, moved or substituted on its own.',
+      },
+    ],
+    cover: 'days of cover',
+    signInLabel: 'Open the tool',
+    signInTitle: 'See the morning brief.',
+  },
+
   common: {
     loading: 'Loading…',
     units: (n: number) => `${n} ${n === 1 ? 'unit' : 'units'}`,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Shell } from './components/Shell'
 import { QuietState } from './components/States'
 import { t } from './i18n/en'
@@ -10,9 +10,12 @@ import { DecisionsPage } from './pages/DecisionsPage'
 import { DetailPanel } from './pages/DetailPanel'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { RegionPage } from './pages/RegionPage'
-import { SignIn } from './pages/SignIn'
 import { cx } from './lib/format'
 import type { AsOfDates, Component, ModeInfo, ReasonCodes, User } from './types'
+
+// The landing page (story, illustrations, sign-in cards) is loaded only when signed out,
+// so none of its code is downloaded inside the working app.
+const Landing = lazy(() => import('./pages/Landing'))
 
 type Session = { state: 'checking' } | { state: 'out' } | { state: 'in'; user: User }
 
@@ -87,13 +90,16 @@ export default function App() {
   }
   if (!user) {
     return (
-      <SignIn
-        onSignedIn={(u, m) => {
-          setMode(m)
-          saveCache('me', u)
-          setSession({ state: 'in', user: u })
-        }}
-      />
+      <Suspense fallback={<div className="grid min-h-dvh place-items-center text-sm text-muted">{t.common.loading}</div>}>
+        <Landing
+          onSignedIn={(u, m) => {
+            setMode(m)
+            saveCache('me', u)
+            setSession({ state: 'in', user: u })
+            window.scrollTo(0, 0)
+          }}
+        />
+      </Suspense>
     )
   }
 

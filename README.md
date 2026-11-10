@@ -29,7 +29,10 @@ they supply.
     hospital will receive, and regional centre stock, each compared with a simple baseline.
   - An alert check against what really happened, compared with a simple cover rule (`docs/RESULTS.md`).
   - An API with three test log-ins, role-based access, Accept / Change / Reject, and an append-only audit log.
-  - A sign-in screen with three one-tap test accounts and the morning brief: one plain sentence, then the eight
+  - A landing page that tells the story in three beats with a blood bag that fills as you scroll (drawn in
+    SVG, no 3D engine). It is loaded only when signed out, becomes plain stacked sections on a phone, and
+    stays still if the device asks for reduced motion.
+  - Sign-in with three one-tap test accounts and the morning brief: one plain sentence, then the eight
     blood groups with days of cover, a cover bar and a status. It keeps the last brief in the browser and
     shows it with a banner if the server cannot be reached. It works at 360, 768 and 1280 pixels wide.
   - A detail view per blood group: the 14-day projection with its range, delivery markers and the point where
@@ -50,7 +53,7 @@ they supply.
   - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The landing page, the central database sync and the architecture diagram are still to come.
+  - The central database sync and the architecture diagram are still to come.
   - The FHIR order is FHIR-shaped: field names were checked against the HL7 R4 page, but it has not been run
     through a validator, and product codes are local stand-ins for ISBT 128 codes.
   - The DHIS2 export uses made-up element and organisation unit IDs (an illustrative mapping).

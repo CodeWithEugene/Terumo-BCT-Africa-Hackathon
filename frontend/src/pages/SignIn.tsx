@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
-import { Logo } from '../components/Shell'
 import { Button } from '../components/States'
-import { TubesBackdrop } from '../components/Tubes'
 import { t } from '../i18n/en'
 import { api, ApiError } from '../lib/api'
 import type { DemoUser, ModeInfo, User } from '../types'
 
-export function SignIn({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo) => void }) {
+export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo) => void }) {
   const [accounts, setAccounts] = useState<DemoUser[] | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
@@ -40,23 +38,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo
   }
 
   return (
-    <div className="relative min-h-dvh overflow-hidden">
-      <TubesBackdrop />
-      <header className="relative bg-sky-soft">
-        <div className="mx-auto flex max-w-[1120px] items-center gap-2.5 px-4 py-3 sm:px-6">
-          <Logo />
-          <span className="text-[0.9375rem] font-semibold text-ink">{t.appName}</span>
-        </div>
-      </header>
-
-      <main className="relative mx-auto max-w-[1120px] px-4 py-[clamp(2rem,6vw,5rem)] sm:px-6">
-        <div className="flex items-center gap-3">
-          <p className="text-xs font-medium tracking-[0.08em] text-muted uppercase">{t.signIn.label}</p>
-          <span className="h-px w-16 bg-line" aria-hidden="true" />
-        </div>
-        <h1 className="mt-4 max-w-[17ch] text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.08]">{t.signIn.title}</h1>
-        <p className="mt-4 max-w-[48ch] text-base">{t.signIn.lead}</p>
-
+    <div>
         {problem && (
           <p role="alert" className="mt-6 max-w-xl rounded-card border border-[#f0cdc9] bg-act-soft px-4 py-3 text-sm text-act">
             {problem}
@@ -131,8 +113,6 @@ export function SignIn({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo
           )}
         </div>
 
-        <p className="mt-12 border-t border-line pt-4 text-[0.8125rem] text-muted">{t.syntheticNote}</p>
-      </main>
     </div>
   )
 }

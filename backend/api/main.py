@@ -35,6 +35,17 @@ def health() -> dict:
     return {"status": "ok", "app": APP_NAME, "database_built": built, **info}
 
 
+@app.get("/api/public-facts", dependencies=[Depends(ready)])
+def public_facts() -> dict:
+    """A few headline numbers for the landing page, all computed by the pipeline (docs/DATA_FACTS.md)."""
+    from backend.db.core import read
+
+    wanted = ("requests", "requests_not_fully_met_pct", "emergency_median_hours", "red_cell_wastage_pct",
+              "collections_drop_in_breaks_pct", "hospitals", "first_date", "last_date")
+    facts = read("SELECT key, value FROM data_fact").set_index("key")["value"]
+    return {key: facts[key] for key in wanted if key in facts.index}
+
+
 # --- Sign-in ---------------------------------------------------------------------
 
 class Login(BaseModel):
