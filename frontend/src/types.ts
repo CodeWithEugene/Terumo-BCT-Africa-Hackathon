@@ -167,6 +167,7 @@ export interface Brief extends ModeInfo {
   component_label: string
   components: { component: Component; label: string; held: boolean }[]
   sentence: string
+  sms_preview: string | null
   next_delivery_label: string | null
   counts: Record<Status, number>
   series: Series[]

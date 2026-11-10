@@ -36,6 +36,7 @@ export function DecisionBar({
   const [problem, setProblem] = useState<string | null>(null)
   const [decision, setDecision] = useState<Decision | null>(series.decision ?? null)
   const [undoLeft, setUndoLeft] = useState(0)
+  const [fhir, setFhir] = useState<string | null>(null)
   const timer = useRef<number | null>(null)
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function DecisionBar({
     setNote('')
     setProblem(null)
     setUndoLeft(0)
+    setFhir(null)
   }, [series.id, series.as_of, series.decision, series.suggestion?.quantity])
 
   useEffect(() => {
@@ -133,6 +135,30 @@ export function DecisionBar({
           <Button variant="outline" onClick={undo} disabled={busy}>
             {t.detail.undo(undoLeft)}
           </Button>
+        )}
+        {suggestion.kind !== 'drive' && decision.action !== 'reject' && decision.final_quantity > 0 && (
+          <Button
+            variant="text"
+            icon="code"
+            className="!px-0"
+            aria-expanded={fhir !== null}
+            onClick={async () => {
+              if (fhir !== null) return setFhir(null)
+              try {
+                setFhir(JSON.stringify(await api.get(`/fhir/SupplyRequest/${decision.decision_id}`), null, 2))
+              } catch (e) {
+                setProblem((e as ApiError).message)
+              }
+            }}
+          >
+            {fhir !== null ? t.fhir.hide : t.fhir.view}
+          </Button>
+        )}
+        {fhir !== null && (
+          <div className="basis-full">
+            <p className="text-[0.8125rem] text-body">{t.fhir.note}</p>
+            <pre className="mt-2 max-h-80 overflow-auto rounded-control border border-line bg-white p-3 text-xs leading-relaxed text-ink">{fhir}</pre>
+          </div>
         )}
         {problem && <p className="basis-full text-sm text-act">{problem}</p>}
       </div>

@@ -117,3 +117,16 @@ def test_full_build_works_on_an_empty_database(tmp_path):
     text = render(fresh)
     assert "Demand forecast" in text and "Supply forecast" in text
     assert alert_backtest is not None
+
+
+def test_unit_labels_are_pseudonymised_and_request_links_are_gone(db_path):
+    raw_labels = set(load("units")["unit_id"].head(500))
+    unit = read("SELECT * FROM unit LIMIT 500", path=db_path)
+    assert not (set(unit["unit_id"]) & raw_labels)
+    assert unit["unit_id"].str.startswith("u_").all()
+    for column in ("donation_id", "issued_request_id"):
+        assert column not in unit.columns
+    moves = read("SELECT * FROM unit_move LIMIT 5", path=db_path)
+    assert "transfer_id" not in moves.columns and "request_id" not in moves.columns
+    joined = read("SELECT COUNT(*) n FROM unit_move m JOIN unit u USING (unit_id)", path=db_path)["n"][0]
+    assert joined == read("SELECT COUNT(*) n FROM unit_move", path=db_path)["n"][0]      # still match inside one build

@@ -11,6 +11,8 @@ Cleaning rules (section 3 of docs/BUILD_PLAN.md):
 """
 from __future__ import annotations
 
+import hashlib
+import secrets
 import sqlite3
 import time
 from pathlib import Path
@@ -98,7 +100,28 @@ def build_unit(units: pd.DataFrame, donations: pd.DataFrame, requests: pd.DataFr
     out = out.merge(asked, on="issued_request_id", how="left")
     out["temp_excursion_exposed"] = out["temp_excursion_exposed"].astype(bool).astype(int)
     out["opening_stock"] = out["opening_stock"].astype(bool).astype(int)
-    return out.drop(columns=["donation_id"])
+    # The donation and request references are dropped: nothing in the database can be
+    # traced back to a donation, a donor, a request or a patient.
+    return out.drop(columns=["donation_id", "issued_request_id"])
+
+
+def pseudonymise_unit_ids(unit: pd.DataFrame, unit_move: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Replace unit labels with random-salted hashes.
+
+    A unit label stands in for a donation identification number, so it could
+    link a unit to a donation. The salt is made fresh on every build and never
+    stored, so the hashes cannot be turned back into labels, yet a unit still
+    matches its own movements inside one build.
+    """
+    salt = secrets.token_bytes(16)
+
+    def scramble(values: pd.Series) -> pd.Series:
+        return values.map(lambda v: "u_" + hashlib.sha256(salt + str(v).encode()).hexdigest()[:16])
+
+    unit, unit_move = unit.copy(), unit_move.copy()
+    unit["unit_id"] = scramble(unit["unit_id"])
+    unit_move["unit_id"] = scramble(unit_move["unit_id"])
+    return unit, unit_move.drop(columns=["transfer_id"])
 
 
 def build_unit_move(transfers: pd.DataFrame) -> pd.DataFrame:
@@ -192,6 +215,7 @@ def build(db_path: Path | None = None, raw_dir: Path | None = None, verbose: boo
     donations = load("donations", raw_dir)
     unit = build_unit(load("units", raw_dir), donations, requests)
     unit_move = build_unit_move(load("transfers", raw_dir))
+    unit, unit_move = pseudonymise_unit_ids(unit, unit_move)
     supply_daily, supply_cleared = build_supply(donations, unit)
     temperature_daily, glitches_dropped = build_temperature_daily(load("temperature_logs", raw_dir))
     stock = load("daily_stock", raw_dir).rename(columns={"units_in_stock_end_of_day": "units"})

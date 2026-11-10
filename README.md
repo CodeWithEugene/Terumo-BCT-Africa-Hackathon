@@ -42,12 +42,21 @@ they supply.
   - A regional view for the regional centre officer: every hospital and blood group in one grid, the supply
     outlook for 4 weeks, the gap against demand by blood group, suggestions for extra collections (each with
     Accept, Change or Reject), and a "what if we add a drive" try-out that saves nothing.
+  - Standards: an accepted order as a FHIR R4-shaped SupplyRequest ("View as FHIR"), a DHIS2-shaped monthly
+    export, and a mapping table in `docs/STANDARDS.md`.
+  - A Data & privacy page: what is used and never loaded, pseudonymising, who can see what (read from the
+    settings the server enforces), where data is stored, cookies, what to do if something leaks, a data-flow
+    diagram, and a privacy notice in English and Swahili.
+  - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The privacy screen, the standards endpoints (FHIR, DHIS2), the offline switch and the landing page are
-    still to come.
+  - The landing page, the central database sync and the architecture diagram are still to come.
+  - The FHIR order is FHIR-shaped: field names were checked against the HL7 R4 page, but it has not been run
+    through a validator, and product codes are local stand-ins for ISBT 128 codes.
+  - The DHIS2 export uses made-up element and organisation unit IDs (an illustrative mapping).
+  - The SMS preview is labelled "Demo, not sent". No message is sent.
+  - The Swahili privacy notice has not yet been checked by a fluent speaker on the team.
   - Drive suggestions are requests to a drive planner. Nothing is booked and no donor is contacted.
-  - The "View as FHIR" link on an accepted order comes with the standards step.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.
 

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { isSimulatedOffline, setSimulatedOffline } from '../lib/api'
 import { t } from '../i18n/en'
 import { cx } from '../lib/format'
 import { href, type Route } from '../lib/route'
@@ -31,6 +32,29 @@ function navItems(user: User): NavItem[] {
     { page: 'privacy', label: t.nav.privacy, icon: 'privacy' },
   )
   return items
+}
+
+export function OfflineSwitch() {
+  const [on, setOn] = useState(isSimulatedOffline())
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      title={t.offline.help}
+      onClick={() => {
+        setSimulatedOffline(!on)
+        setOn(!on)
+      }}
+      className={cx(
+        'inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[0.8125rem] font-medium',
+        on ? 'border-watch bg-watch-soft text-watch' : 'border-ink/25 bg-white/60 text-ink hover:bg-white',
+      )}
+    >
+      <Icon name="offline" size={15} />
+      {on ? t.offline.on : t.offline.toggle}
+    </button>
+  )
 }
 
 export function ModeChip({ mode }: { mode: ModeInfo | null }) {
@@ -184,6 +208,7 @@ export function Shell({
             </label>
             {extra}
             <ModeChip mode={mode} />
+            <OfflineSwitch />
           </div>
         </div>
       </header>

@@ -37,6 +37,8 @@
 
 @layer base {
   html {
+    /* Light theme only (docs/DESIGN.md). This stops a browser's automatic dark mode from recolouring the app. */
+    color-scheme: only light;
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--color-body);

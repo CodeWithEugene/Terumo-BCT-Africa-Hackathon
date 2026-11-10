@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from backend import config
-from backend.api import auth, service
+from backend.api import auth, service, standards
 from backend.api.auth import User, current_user
 from backend.config import APP_NAME, DB_PATH
 from backend.db.app_tables import ensure_app_tables, set_setting
@@ -159,3 +159,22 @@ def fallback(body: Fallback, user: User = Depends(current_user)) -> dict:
     set_setting("force_baseline", "1" if body.use_baseline else "0")
     service.audit(user, "fallback_switch", decided={"use_baseline": body.use_baseline})
     return service.mode_info()
+
+
+# --- Standards and privacy ---------------------------------------------------------------
+
+@app.get("/fhir/SupplyRequest/{decision_id}", dependencies=[Depends(ready)])
+def fhir_supply_request(decision_id: int, user: User = Depends(current_user)) -> dict:
+    """An accepted order as a FHIR R4-shaped SupplyRequest."""
+    return standards.supply_request(user, decision_id)
+
+
+@app.get("/export/dhis2", dependencies=[Depends(ready)])
+def export_dhis2(user: User = Depends(current_user)) -> dict:
+    """Monthly aggregates in the shape of a DHIS2 dataValueSet (illustrative IDs)."""
+    return standards.dhis2_export(user)
+
+
+@app.get("/api/privacy", dependencies=[Depends(ready)])
+def privacy(user: User = Depends(current_user)) -> dict:
+    return service.privacy(user)

@@ -112,6 +112,8 @@ def brief(user: User, as_of: str | None, facility_id: str | None, component: str
         "components": [{"component": c, "label": spec["label"], "held": (facility_id, c) in snap.held}
                        for c, spec in products.items()],
         "sentence": summary_sentence(views),
+        "sms_preview": sms_preview(facility_card(facility_id)["name"], f"{words.day(snap.as_of)} {snap.as_of.year}", views)
+        if held else None,
         "next_delivery_label": words.day(deliveries[0]) if deliveries else None,
         "counts": {s: sum(v["status"] == s for v in views) for s in ("act", "watch", "steady", "not_held")},
         "series": views,
@@ -394,6 +396,41 @@ def audit_entries(user: User, limit: int = 200) -> dict:
             if isinstance(value, float) and np.isnan(value):
                 row[key] = None
     return {**mode_info(), "entries": rows}
+
+
+def sms_preview(facility_name: str, as_of_label: str, views: list[dict]) -> str:
+    """The day's alerts as one text message of at most 160 characters. Demo only: nothing is sent."""
+    act = [v["blood_group"] for v in views if v["status"] == "act"]
+    watch = [v["blood_group"] for v in views if v["status"] == "watch"]
+    short_name = facility_name.replace(" Hospital", "").replace(" County Referral", "")[:22]
+    parts = [f"{short_name} {as_of_label[:-5]}:"]
+    parts.append(f"ACT {' '.join(act)}." if act else "No group needs action.")
+    if watch:
+        parts.append(f"Watch {' '.join(watch)}.")
+    delivery = next((v["next_delivery"]["label"] for v in views if v.get("next_delivery")), None)
+    if delivery:
+        parts.append(f"Next delivery {delivery}.")
+    parts.append("Open the app to decide.")
+    text = " ".join(parts)
+    return text if len(text) <= 160 else text[:157] + "..."
+
+
+def privacy(user: User) -> dict:
+    """What the Data & privacy page shows. Roles come from the same file the server enforces."""
+    access = config.load_settings("access")
+    from backend.pipeline.load import ALLOWED_FILES, NEVER_READ
+
+    synced = get_setting("last_central_sync", "")
+    return {
+        **mode_info(),
+        "tables_used": list(ALLOWED_FILES),
+        "never_loaded": ["donors"],
+        "columns_never_read": {name: sorted(columns) for name, columns in NEVER_READ.items()},
+        "roles": [{"role": key, **value} for key, value in access["roles"].items()],
+        "your_role": user.role, "your_scope": [facility_card(f)["name"] for f in scope(user)],
+        "session_hours": access["session_hours"],
+        "last_central_sync": synced or None,
+    }
 
 
 def accuracy() -> dict:

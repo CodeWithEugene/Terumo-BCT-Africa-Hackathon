@@ -8,6 +8,7 @@ import { AccuracyPage } from './pages/AccuracyPage'
 import { BriefPage } from './pages/BriefPage'
 import { DecisionsPage } from './pages/DecisionsPage'
 import { DetailPanel } from './pages/DetailPanel'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { RegionPage } from './pages/RegionPage'
 import { SignIn } from './pages/SignIn'
 import { cx } from './lib/format'
@@ -162,6 +163,8 @@ export default function App() {
             setRefreshKey((k) => k + 1)
           }}
         />
+      ) : route.page === 'privacy' ? (
+        <PrivacyPage />
       ) : (
         <QuietState title={t.common.comingSoon} text="" />
       )}

@@ -196,6 +196,19 @@ export function BriefPage({
                   <Tile key={s.id} series={s} index={i} selected={selectedId === s.id} />
                 ))}
               </div>
+              {brief.sms_preview && !compact && (
+                <div className="mt-10">
+                  <SectionLabel aside={<span className="rounded-full border border-ink/30 px-2.5 py-0.5 text-[0.75rem] font-medium text-ink">{t.sms.demo}</span>}>
+                    {t.sms.label}
+                  </SectionLabel>
+                  <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <p className="max-w-sm rounded-[14px] rounded-bl-sm bg-bg-alt px-4 py-3 text-sm leading-relaxed text-ink">{brief.sms_preview}</p>
+                    <p className="max-w-[44ch] text-[0.8125rem] text-muted">
+                      {t.sms.help} {t.sms.chars(brief.sms_preview.length)}.
+                    </p>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
