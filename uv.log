@@ -71,3 +71,7 @@ INFO:     127.0.0.1:59200 - "GET /api/reason-codes HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59184 - "GET /api/asof-dates HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59206 - "GET /api/brief?as_of=2026-09-28&facility_id=HSP-006&component=RBC HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59220 - "GET /api/brief?as_of=2026-09-28&facility_id=HSP-006&component=RBC HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2420]
