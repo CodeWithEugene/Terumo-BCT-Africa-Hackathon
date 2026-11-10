@@ -1,0 +1,14 @@
+# secrets
+.env
+wallet/
+# never in this repo
+data/raw/donors.csv
+# built files
+data/*.db
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store
