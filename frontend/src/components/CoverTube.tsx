@@ -12,7 +12,7 @@ const SCALE_DAYS = 14
 
 /**
  * The cover bar, drawn as a slim tube. The fill is days of cover on a 14-day
- * scale. The darker part is what holds even in a busy spell; the lighter part
+ * scale. The solid part is what holds even in a busy spell; the striped part
  * is the expected case. The tick marks the next delivery: a fill that stops
  * short of the tick is a shortage you can see without a legend.
  */
@@ -37,10 +37,11 @@ export function CoverTube({
   const tick = deliveryDay == null ? null : Math.min(1, deliveryDay / SCALE_DAYS)
   return (
     <div className="relative pt-2 pb-1" role="img" aria-label={label}>
-      <div className="relative h-3 overflow-hidden rounded-full border border-[#c9ced6] bg-white">
+      <div className="relative h-3 overflow-hidden rounded-full border border-edge bg-white">
+        {/* expected cover: striped, so it reads as "likely" without relying on a paler colour */}
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full opacity-45"
-          style={{ background: fill[status] }}
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ background: `repeating-linear-gradient(135deg, ${fill[status]} 0 3px, transparent 3px 6px)` }}
           initial={{ width: reduce ? `${expected * 100}%` : 0 }}
           animate={{ width: `${expected * 100}%` }}
           transition={{ duration: 0.3, ease: 'easeOut' }}

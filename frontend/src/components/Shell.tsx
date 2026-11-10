@@ -47,7 +47,7 @@ export function OfflineSwitch() {
         setOn(!on)
       }}
       className={cx(
-        'inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[0.8125rem] font-medium',
+        'inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[0.8125rem] font-medium pointer-coarse:min-h-11',
         on ? 'border-watch bg-watch-soft text-watch' : 'border-ink/25 bg-white/60 text-ink hover:bg-white',
       )}
     >
@@ -161,7 +161,7 @@ export function Shell({
       </nav>
 
       {/* Pale blue band: where you are, the date, and the mode */}
-      <header className="sticky top-0 z-20 bg-sky-soft">
+      <header className="sticky top-0 z-20 bg-sky-soft pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 md:min-w-[15rem]">
             <span className="md:hidden">

@@ -137,7 +137,7 @@ export default function App() {
           {route.page === 'group' && (
             <aside
               aria-label="Blood group detail"
-              className="xl:fixed xl:inset-y-0 xl:right-0 xl:z-40 xl:w-[min(34rem,46vw)] xl:overflow-y-auto xl:border-l xl:border-ink/15 xl:bg-white xl:px-7 xl:py-5"
+              className="xl:fixed xl:inset-y-0 xl:right-0 xl:z-40 xl:w-[min(34rem,46vw)] xl:overflow-y-auto xl:overscroll-contain xl:border-l xl:border-ink/15 xl:bg-white xl:px-7 xl:py-5"
             >
               <DetailPanel
                 id={route.id}

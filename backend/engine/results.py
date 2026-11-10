@@ -154,5 +154,5 @@ def demand_section(db_path: Path | None = None) -> list[str]:
 def write_results(db_path: Path | None = None, write_docs: bool = True) -> str:
     text = render(db_path)
     if write_docs:
-        (config.DOCS_DIR / "RESULTS.md").write_text(text + "\n", encoding="utf-8")
+        (config.DOCS_DIR / "RESULTS.md").write_text(text + "\n", encoding="utf-8", newline="\n")
     return text

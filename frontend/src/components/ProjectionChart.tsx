@@ -11,6 +11,7 @@ import type { Series } from '../types'
 export function ProjectionChart({ series, showActual }: { series: Series; showActual: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(520)
+  const [active, setActive] = useState<number | null>(null)
   useEffect(() => {
     if (!box.current) return
     const observer = new ResizeObserver(([entry]) => setWidth(Math.max(280, Math.round(entry.contentRect.width))))
@@ -21,7 +22,7 @@ export function ProjectionChart({ series, showActual }: { series: Series; showAc
   const days = series.projection ?? []
   if (days.length === 0) return null
   const actual = showActual ? (series.actual?.days ?? []) : []
-  const height = width < 420 ? 220 : 250
+  const height = width < 420 ? 230 : 260
   const pad = { top: 30, right: 14, bottom: 48, left: 34 }
   const innerW = width - pad.left - pad.right
   const innerH = height - pad.top - pad.bottom
@@ -38,11 +39,47 @@ export function ProjectionChart({ series, showActual }: { series: Series; showAc
   const outIndex = series.stockout_date ? days.findIndex((d) => d.date === series.stockout_date) : -1
   const every = width < 420 ? 3 : 2
   const ticks = [0, Math.round(top / 1.12 / 2), Math.round(top / 1.12)].filter((v, i, a) => a.indexOf(v) === i)
-  const lastY = y(line[line.length - 1])
+
+  const pick = (clientX: number, target: SVGSVGElement) => {
+    const left = target.getBoundingClientRect().left
+    const i = Math.round(((clientX - left - pad.left) / innerW) * days.length - 0.5)
+    setActive(Math.max(0, Math.min(days.length - 1, i)))
+  }
+  const shown = active === null ? null : days[active]
+  const tipX = active === null ? 0 : Math.min(Math.max(x(active + 1), 86), width - 86)
 
   return (
-    <div ref={box} className="w-full">
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${t.detail.chartTitle}. ${series.status_line}`}>
+    <div ref={box} className="relative w-full">
+      {shown && (
+        <div
+          className="pointer-events-none absolute z-10 w-[10.5rem] -translate-x-1/2 rounded-control border border-ink/20 bg-white px-3 py-2 text-[0.8125rem] leading-snug"
+          style={{ left: tipX, top: 0 }}
+          role="status"
+        >
+          <p className="font-medium text-ink">{shown.label}</p>
+          <p>
+            Stock <span className="font-medium text-ink">{shown.stock}</span> ({shown.stock_low} to {shown.stock_high})
+          </p>
+          <p>
+            Use {shown.demand}
+            {shown.is_delivery_day ? `, delivery +${shown.delivery}` : ''}
+            {shown.expiring > 0 ? `, ${shown.expiring} expiring` : ''}
+          </p>
+        </div>
+      )}
+      <svg
+        tabIndex={0}
+        className="touch-pan-y outline-offset-4"
+        onPointerMove={(e) => pick(e.clientX, e.currentTarget)}
+        onPointerDown={(e) => pick(e.clientX, e.currentTarget)}
+        onPointerLeave={() => setActive(null)}
+        onBlur={() => setActive(null)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight') setActive((i) => Math.min(days.length - 1, (i ?? -1) + 1))
+          if (e.key === 'ArrowLeft') setActive((i) => Math.max(0, (i ?? days.length) - 1))
+          if (e.key === 'Escape') setActive(null)
+        }}
+        width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${t.detail.chartTitle}. ${series.status_line}`}>
         {/* weekends, barely visible */}
         {days.map((d, i) => d.weekend && <rect key={d.date} x={x(i)} y={pad.top} width={innerW / days.length} height={innerH} fill="#141b4d" opacity="0.035" />)}
         {/* range band */}
@@ -88,6 +125,12 @@ export function ProjectionChart({ series, showActual }: { series: Series; showAc
         {/* expected stock */}
         <path d={path(line)} fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         <circle cx={x(0)} cy={y(start)} r="3.5" fill="var(--color-ink)" />
+        {active !== null && (
+          <g>
+            <line x1={x(active + 1)} x2={x(active + 1)} y1={pad.top} y2={y(0)} stroke="var(--color-ink)" strokeOpacity="0.5" />
+            <circle cx={x(active + 1)} cy={y(days[active].stock)} r="4.5" fill="white" stroke="var(--color-ink)" strokeWidth="2" />
+          </g>
+        )}
         {/* the point where stock runs out */}
         {outIndex >= 0 && (
           <g>
@@ -96,16 +139,6 @@ export function ProjectionChart({ series, showActual }: { series: Series; showAc
               {t.detail.chartOut}
             </text>
           </g>
-        )}
-        {/* direct label on the line, not a legend */}
-        {start > top * 0.25 ? (
-          <text x={x(0) + 10} y={Math.max(pad.top + 4, y(start) - 10)} fontSize="12" fontWeight="500" fill="var(--color-ink)">
-            {t.detail.chartLine}
-          </text>
-        ) : (
-          <text x={width - pad.right} y={Math.min(lastY - 10, y(top * 0.3))} textAnchor="end" fontSize="12" fontWeight="500" fill="var(--color-ink)">
-            {t.detail.chartLine}
-          </text>
         )}
         {/* days in words */}
         {days.map(
@@ -118,6 +151,10 @@ export function ProjectionChart({ series, showActual }: { series: Series; showAc
         )}
       </svg>
       <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem] text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-4 border-t-2 border-ink" aria-hidden="true" />
+          {t.detail.chartLine}
+        </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-4 rounded-sm bg-sky-soft" aria-hidden="true" />
           {t.detail.chartBand}

@@ -287,7 +287,7 @@ def write_data_facts(db_path: Path | None = None, out_path: Path | None = None,
     facts, tables = compute_facts(db_path)
     text = render(facts, tables)
     if write_docs:
-        (out_path or config.DOCS_DIR / "DATA_FACTS.md").write_text(text, encoding="utf-8")
+        (out_path or config.DOCS_DIR / "DATA_FACTS.md").write_text(text, encoding="utf-8", newline="\n")
     conn = sqlite3.connect(db_path or config.DB_PATH)
     try:
         pd.DataFrame([{"key": k, "value": str(v)} for k, v in facts.items()]).to_sql(

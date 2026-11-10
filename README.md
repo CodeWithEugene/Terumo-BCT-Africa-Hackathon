@@ -197,6 +197,7 @@ The donor table is deliberately not in this repo and is never loaded. No real do
 | Tool | What we used it for |
 | --- | --- |
 | Claude Code (Anthropic) | Writing and testing the code in this repo during the hackathon, under the team's direction: the data pipeline, forecasts, API, web app, tests and documentation drafts. It also checked the screens with screenshots. |
+| Design skill packs for Claude Code: impeccable (pbakaus), taste-skill (Leonxlnx), skills (emilkowalski) | Checklists read during one design polish pass: contrast, touch behaviour, interaction states, motion timing. They are instruction documents, not code; none of their scripts were run and none of their files are in this repo. |
 
 The team set the plan and the rules (`docs/BUILD_PLAN.md`, `CLAUDE.md`), chose the problem and the design
 direction, checked the data findings, ran and reviewed each step, and can explain the code. No language model

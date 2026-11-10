@@ -16,10 +16,12 @@
   --color-line: #e3e5e8;
   --color-ink: #141b4d;
   --color-body: #595959;
-  --color-muted: #6b7280;
+  --color-muted: #5f6672;
   --color-primary: #141b4d;
   --color-sky: #71c5e8;
   --color-sky-soft: #d4eef8;
+  --color-sky-strong: #2586b6; /* sky, dark enough (3:1) to be read as a bar or mark on white */
+  --color-edge: #737a89;       /* outlines of tubes and tracks: 3:1 on white and on the tinted tiles */
 
   --color-steady: #1f6f54;
   --color-steady-soft: #e6f4ee;
@@ -27,10 +29,12 @@
   --color-watch-soft: #fcf1d9;
   --color-act: #a8322c;
   --color-act-soft: #fbe8e6;
-  --color-fill-steady: #3fa07e;
-  --color-fill-watch: #b8821a;
-  --color-fill-act: #cf5a52;
+  --color-fill-steady: #2e8f6c;
+  --color-fill-watch: #a37212;
+  --color-fill-act: #c34e46;
 
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   --radius-card: 10px;
   --radius-control: 8px;
 }
@@ -57,6 +61,76 @@
     color: var(--color-ink);
     font-weight: 600;
     letter-spacing: -0.01em;
+  }
+  /* Text selection, caret and scrollbars in the app's own colours. */
+  ::selection {
+    background: var(--color-sky-soft);
+    color: var(--color-ink);
+  }
+  input,
+  textarea {
+    caret-color: var(--color-primary);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #b9bfca transparent;
+  }
+  /* Phones: no grey flash on tap, no double-tap zoom delay, no accidental pull-to-refresh,
+     and no long-press text selection on things that are pressed, not read. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    /* keyboard focus and in-page links never land under the sticky top band */
+    scroll-padding-top: 6rem;
+  }
+  a,
+  button,
+  select,
+  [role='tab'],
+  [role='switch'] {
+    touch-action: manipulation;
+  }
+  button,
+  [role='tab'],
+  [role='switch'],
+  nav a {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* Inputs at 16px on touch screens, so iOS does not zoom the page when one is tapped. */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 1rem;
+    }
+  }
+  /* Feedback the moment a finger or mouse lands. */
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+  a[href]:active {
+    opacity: 0.85;
+  }
+  button {
+    transition: transform 120ms var(--ease-out), background-color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+  }
+  /* Headings break into even lines; paragraphs avoid a lone last word. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+  select:disabled,
+  input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
   :focus-visible {
     outline: 2px solid var(--color-primary);

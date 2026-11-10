@@ -177,8 +177,8 @@ export function RegionPage({
                     <span className="text-[2rem] leading-none font-medium text-ink">{w.expected_cleared}</span>
                     <span className="text-[0.8125rem]">{t.region.expected}</span>
                   </p>
-                  <div className="relative mt-3 h-3 rounded-full border border-[#c9ced6] bg-white" role="img" aria-label={`${w.expected_cleared} ${t.region.expected}, ${t.region.usual(w.usual_cleared)}`}>
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-sky" style={{ width: `${(w.expected_cleared / maxWeek) * 100}%` }} />
+                  <div className="relative mt-3 h-3 rounded-full border border-edge bg-white" role="img" aria-label={`${w.expected_cleared} ${t.region.expected}, ${t.region.usual(w.usual_cleared)}`}>
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-sky-strong" style={{ width: `${(w.expected_cleared / maxWeek) * 100}%` }} />
                     <div className="absolute -top-1 -bottom-1 w-px bg-ink" style={{ left: `${(w.usual_cleared / maxWeek) * 100}%` }} />
                   </div>
                   <p className="mt-2 text-[0.8125rem] text-muted">

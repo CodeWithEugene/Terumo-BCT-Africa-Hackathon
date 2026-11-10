@@ -8,7 +8,7 @@ export function RackArt({ filled = 0 }: { filled?: number }) {
       <path d="M6 58h120M14 58V26M118 58V26M6 26h120" stroke="var(--color-line)" strokeWidth="2" strokeLinecap="round" />
       {Array.from({ length: 8 }, (_, i) => (
         <g key={i}>
-          <rect x={20 + i * 12} y="12" width="8" height="40" rx="4" stroke="#c9ced6" strokeWidth="1.5" fill="white" />
+          <rect x={20 + i * 12} y="12" width="8" height="40" rx="4" stroke="var(--color-edge)" strokeOpacity="0.6" strokeWidth="1.5" fill="white" />
           <rect
             x={21.5 + i * 12}
             y={i < filled ? 28 : 50}

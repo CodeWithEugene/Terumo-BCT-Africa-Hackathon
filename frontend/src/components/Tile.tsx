@@ -35,6 +35,8 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
   } else if (worst != null && cover !== null && !capped && cover - worst >= 0.500) {
     hint = t.tile.couldBe(coverText(worst))
   }
+  // On a tinted tile, quiet text takes a navy tint: grey on amber or red reads as washed out.
+  const quiet = series.status === 'act' || series.status === 'watch' ? 'text-ink/75' : 'text-muted'
   const delivery = series.next_delivery
   const barLabel = t.tile.coverBar(
     empty ? t.tile.empty : noUse ? t.tile.noUse : `${big} ${unit}`.trim(),
@@ -51,7 +53,7 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
       className={cx(
         'group flex min-h-[11.500rem] flex-col rounded-card border p-4 no-underline transition-colors duration-150 sm:p-5',
         surface[series.status],
-        'hover:border-ink/40 focus-visible:border-ink',
+        'hover:border-ink/40 focus-visible:border-ink active:translate-y-px',
         selected && 'border-ink ring-1 ring-ink',
       )}
     >
@@ -73,7 +75,7 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
         </span>
         <span className="text-sm text-body">{unit}</span>
       </div>
-      <p className="min-h-5 text-[0.8125rem] text-muted">{hint}</p>
+      <p className={cx('min-h-5 text-[0.8125rem]', quiet)}>{hint}</p>
 
       <CoverTube
         cover={cover}
@@ -87,7 +89,7 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
       <div className="mt-auto flex items-end justify-between gap-2 pt-2 text-[0.8125rem] text-body">
         <span>{t.tile.onShelf(series.units_on_shelf)}</span>
         {delivery && (
-          <span className="inline-flex items-center gap-1 text-muted">
+          <span className={cx('inline-flex items-center gap-1', quiet)}>
             <Icon name="delivery" size={14} />
             {delivery.label}
           </span>
