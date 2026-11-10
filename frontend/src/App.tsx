@@ -58,6 +58,14 @@ export default function App() {
       .catch(() => undefined)
   }, [user])
 
+  // Opening a blood group by its link also selects that group's hospital, so the brief behind it matches.
+  const groupId = route.page === 'group' ? route.id : null
+  useEffect(() => {
+    if (!user || !groupId) return
+    const facility = groupId.split('|')[0]
+    if (user.facilities.some((f) => f.facility_id === facility)) setFacilityId(facility)
+  }, [user, groupId])
+
   const onMode = useCallback((m: ModeInfo) => setMode(m), [])
 
   async function signOut() {

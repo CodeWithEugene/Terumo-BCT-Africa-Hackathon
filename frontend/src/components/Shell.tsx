@@ -139,14 +139,14 @@ export function Shell({
       {/* Pale blue band: where you are, the date, and the mode */}
       <header className="sticky top-0 z-20 bg-sky-soft">
         <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 md:min-w-[15rem]">
             <span className="md:hidden">
               <Logo />
             </span>
             {user.facilities.length > 1 ? (
-              <label className="min-w-0 flex-1 md:flex-none">
+              <label className="min-w-0 flex-1 md:max-w-[22rem]">
                 <span className="sr-only">{t.top.hospital}</span>
-                <select className={selectClass} value={facilityId} onChange={(e) => onFacility(e.target.value)}>
+                <select className={selectClass.replace('md:w-auto', '')} value={facilityId} onChange={(e) => onFacility(e.target.value)}>
                   {user.facilities.map((f) => (
                     <option key={f.facility_id} value={f.facility_id}>
                       {f.name}
