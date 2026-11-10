@@ -90,6 +90,10 @@ def render(db_path: Path | None = None) -> str:
         "",
         *forecast_section(metrics),
     ]
+    if table_exists("supply_metric", db_path):
+        from backend.engine.supply_backtest import results_section as supply_section
+
+        lines += supply_section(db_path)
     if table_exists("alert_metric", db_path):
         from backend.engine.alert_backtest import results_section
 

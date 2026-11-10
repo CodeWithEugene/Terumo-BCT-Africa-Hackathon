@@ -35,3 +35,12 @@ orders:
 minimum_stock:
   RBC: {"O-": 2}
   FFP: {}
+
+# --- Supply forecast (red cells and whole blood) ------------------------------------
+supply:
+  weeks_ahead: 4
+  baseline_weeks: 4              # the "usual way": average of this many past weeks
+  share_weeks: 8                 # weeks used for each hospital's share of its centre's deliveries
+  max_testing_wait_days: 10
+  unplanned_venues: [emergency_appeal]   # not known in advance, so never used as "scheduled"
+  use_in_projection: true        # project hospital deliveries from the supply forecast

@@ -29,8 +29,9 @@ from backend.engine.projection import build_snapshot, series_view
 from backend.engine.world import get_world
 
 RULES = {
-    "ours": "Our alert (Act or Watch)",
-    "ours_act": "Our alert (Act only)",
+    "ours": "Our alert (Act or Watch), deliveries from the supply forecast",
+    "ours_act": "Our alert (Act only), deliveries from the supply forecast",
+    "ours_usual": "Our alert (Act or Watch), usual deliveries",
     "simple": "Simple rule (cover under {x:g} days on the 28-day average)",
 }
 
@@ -43,7 +44,8 @@ def collect(model: str, db_path: Path | None = None, origin_dates=None) -> pd.Da
     window, rule_days = alerts["event_window_days"], alerts["baseline_rule_cover_days"]
     rows = []
     for origin in (origin_dates if origin_dates is not None else backtest.origins()):
-        snap = build_snapshot(world, origin, model)
+        snap = build_snapshot(world, origin, model, use_supply=True)
+        plain = build_snapshot(world, origin, model, use_supply=False)
         cut = panel.position(origin)
         average = panel.requested[cut - 28:cut].mean(axis=0)
         shortage = panel.shortage[cut:cut + window]
@@ -58,6 +60,7 @@ def collect(model: str, db_path: Path | None = None, origin_dates=None) -> pd.Da
                 "origin": origin, "series": index, "component": row["component"],
                 "facility type": row["facility_type"],
                 "ours": view["status"] in ("act", "watch"), "ours_act": view["status"] == "act",
+                "ours_usual": series_view(plain, index, detail=False)["status"] in ("act", "watch"),
                 "simple": bool(average[index] > 0 and shelf / average[index] < rule_days),
                 "event": len(hit_days) > 0,
                 "event_unmet_only": bool((unmet[:, index] > 0).any()),
@@ -154,7 +157,7 @@ def results_section(db_path: Path | None = None) -> list[str]:
                 for rule, label in RULES.items():
                     if rule == "simple" and name != names[0]:
                         continue                      # the simple rule does not depend on the forecast
-                    if rule == "ours_act" and segment_type not in ("all", "strict"):
+                    if rule in ("ours_act", "ours_usual") and segment_type not in ("all", "strict"):
                         continue
                     m = by_segment[(by_segment["model"] == name) & (by_segment["rule"] == rule)]
                     if m.empty:

@@ -39,8 +39,9 @@ def load_world(db_path: Path | None = None) -> World:
     stock["product"] = stock["component"].map(product_of)
     delivery = read("SELECT * FROM delivery", parse_dates=["date"], path=db_path)
     delivery["product"] = delivery["component"].map(product_of)
-    unit = read("SELECT unit_id, component, blood_group, expiry_date, processed_at_id, status, status_date, "
-                "available_date FROM unit", parse_dates=["expiry_date", "status_date", "available_date"],
+    unit = read("SELECT unit_id, component, blood_group, collection_date, expiry_date, processed_at_id, "
+                "collecting_site_id, status, status_date, available_date FROM unit",
+                parse_dates=["collection_date", "expiry_date", "status_date", "available_date"],
                 path=db_path)
     unit["product"] = unit["component"].map(product_of)
     move = read("SELECT unit_id, to_facility_id, dispatched_at, received_at FROM unit_move",

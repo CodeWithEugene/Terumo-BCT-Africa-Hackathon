@@ -116,11 +116,15 @@ def build(snap, index: int, view: dict) -> list[dict]:
     if view["next_delivery"]:
         d = view["next_delivery"]
         use = float(snap.forecast.p50[:d["days_away"], index].sum())
-        today = (f", and today's delivery usually brings {words.units(view['arriving_today'])}"
+        verb = "is expected to bring" if view.get("deliveries_from_supply_forecast") else "usually brings"
+        today = (f", and today's delivery {verb} {words.units(view['arriving_today'])}"
                  if view["arriving_today"] >= 0.5 else "")
         add(1 if view["status"] != "steady" else 4, "shelf",
             f"{words.units(view['units_on_shelf'])} on the shelf{today}. Expected use before {d['label']} is "
-            f"{words.units(use)}. The usual delivery on {d['label']} brings {words.units(d['usual_units'])}.")
+            f"{words.units(use)}. " + (
+                f"The delivery on {d['label']} is expected to bring {words.units(d['usual_units'])}."
+                if view.get("deliveries_from_supply_forecast") else
+                f"The usual delivery on {d['label']} brings {words.units(d['usual_units'])}."))
 
     # 2. Units expiring before the next delivery.
     if view["expiring_before_delivery"] >= 1 and view["next_delivery"]:
@@ -145,6 +149,24 @@ def build(snap, index: int, view: dict) -> list[dict]:
         add(2 if view["status"] != "steady" else 4, "supply",
             f"Routine deliveries brought {words.units(delivered)} of {group} in the last 4 weeks, "
             f"against {words.units(last)} requested.")
+
+    # 3c. What the regional centre is expected to clear this week.
+    if snap.supply is not None and row["component"] == "RBC":
+        from backend.engine import supply as supply_engine
+
+        hist = supply_engine.history(world)
+        c, g = hist.centres.index(region), hist.groups.index(row["blood_group"])
+        ahead, usual = float(snap.supply.cleared[c, g, 0]), float(snap.supply.cleared_recent[c, g])
+        what = f"{group} red cell units"
+        if usual < alerts["trend_min_units"]:          # too few of this group to compare; use all groups
+            ahead, usual = float(snap.supply.cleared[c, :, 0].sum()), float(snap.supply.cleared_recent[c].sum())
+            what = "red cell units of all groups"
+        if usual > 0:
+            change = round(100 * (ahead / usual - 1))
+            if abs(change) >= alerts["trend_min_change_pct"]:
+                add(2 if change < 0 else 5, "supply_forecast",
+                    f"From the drive schedule, the {region_name} centre should clear about {round(ahead)} {what} "
+                    f"this week, {'down' if change < 0 else 'up'} {abs(change)}% on its 4-week average of {round(usual)}.")
 
     # 4. Requests recently not met.
     unmet = int(context["unmet14"][index])

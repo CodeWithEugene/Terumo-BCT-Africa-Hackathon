@@ -25,6 +25,8 @@ they supply.
   - A baseline forecast (same weekday, last 4 weeks) with a backtest over 16 weekly dates.
   - A 14-day stock projection per hospital, product and blood group, with days of cover, a range,
     a status (Act, Watch, Steady), plain-language reasons and a suggested order shown as a sum.
+  - A supply forecast for red cells: cleared units per regional centre from the drive schedule, what each
+    hospital will receive, and regional centre stock, each compared with a simple baseline.
   - An alert check against what really happened, compared with a simple cover rule (`docs/RESULTS.md`).
   - An API with three test log-ins, role-based access, Accept / Change / Reject, and an append-only audit log.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.

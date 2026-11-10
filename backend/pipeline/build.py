@@ -252,7 +252,9 @@ def build(db_path: Path | None = None, raw_dir: Path | None = None, verbose: boo
     ensure_app_tables(db_path)
 
     if run_backtests:
-        from backend.engine import alert_backtest, backtest, models
+        from backend.engine import alert_backtest, backtest, models, supply_backtest
+        say("Backtesting the supply forecast...")
+        supply_backtest.run(db_path=db_path, write_docs=write_docs, verbose=False)
         for name in models.REGISTRY:
             say(f"Backtesting the '{name}' forecast...")
             backtest.run(name, db_path=db_path, write_docs=write_docs, verbose=False)

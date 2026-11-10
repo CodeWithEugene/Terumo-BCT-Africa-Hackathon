@@ -39,10 +39,12 @@ class Snapshot:
     usual: dict = field(default_factory=dict)          # (facility, product, group, weekday) -> units
     lead_hours: dict = field(default_factory=dict)     # facility -> usual emergency resupply hours
     context: dict = field(default_factory=dict)        # facts for the reasons (see reasons.py)
+    supply: object = None                              # supply forecast for red cells, or None
+    received: dict = field(default_factory=dict)       # (facility, group) -> expected routine units per week
     settings: dict = field(default_factory=dict)
 
 
-def build_snapshot(world: World, as_of, model: str = "auto") -> Snapshot:
+def build_snapshot(world: World, as_of, model: str = "auto", use_supply: bool | None = None) -> Snapshot:
     as_of = pd.Timestamp(as_of).normalize()
     settings = config.load_settings("thresholds")
     horizon = settings["forecast"]["horizon_days"]
@@ -110,8 +112,42 @@ def build_snapshot(world: World, as_of, model: str = "auto") -> Snapshot:
         else:
             snap.lead_hours[facility] = float(by_region.get(region_of[facility], overall))
 
+    # Red cell deliveries follow what the regional centre can supply (see supply.py).
+    if use_supply is None:
+        use_supply = bool(settings.get("supply", {}).get("use_in_projection", False))
+    if use_supply:
+        try:
+            from backend.engine import supply
+
+            made = supply.forecast(world, as_of)
+            hist = supply.history(world)
+            snap.supply = made
+            for h, facility in enumerate(hist.hospitals):
+                for g, group in enumerate(hist.groups):
+                    snap.received[(facility, group)] = made.received[h, g]
+        except Exception:  # noqa: BLE001  (fall back to usual deliveries, never stop the brief)
+            snap.supply, snap.received = None, {}
+
     snap.context = reasons.build_context(snap)
     return snap
+
+
+def _expected_arrivals(snap: Snapshot, facility: str, product: str, group: str, delivery_days: set) -> np.ndarray:
+    """Expected routine units arriving on each projected day."""
+    usual = np.array([snap.usual.get((facility, product, group, d.weekday()), 0.0)
+                      if d.weekday() in delivery_days else 0.0 for d in snap.dates])
+    weekly = snap.received.get((facility, group)) if product == "RBC" else None
+    if weekly is None or not delivery_days:
+        return usual
+    out = np.zeros(snap.horizon)
+    for week in range(math.ceil(snap.horizon / 7)):
+        days = [t for t in range(7 * week, min(7 * week + 7, snap.horizon)) if snap.dates[t].weekday() in delivery_days]
+        if not days or week >= len(weekly):
+            continue
+        weights = usual[days]
+        weights = weights / weights.sum() if weights.sum() > 0 else np.full(len(days), 1 / len(days))
+        out[days] = weekly[week] * weights
+    return out
 
 
 def _reconcile(cohorts: list[tuple[int, float]], on_shelf: float) -> list[tuple[int, float]]:
@@ -160,8 +196,7 @@ def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
     shelf = snap.shelf.get(key, 0.0)
     cohorts = snap.cohorts.get(key, [])
     delivery_days = snap.delivery_days.get(facility, set())
-    arrivals = np.array([snap.usual.get((facility, product, group, d.weekday()), 0.0)
-                         if d.weekday() in delivery_days else 0.0 for d in snap.dates])
+    arrivals = _expected_arrivals(snap, facility, product, group, delivery_days)
     is_delivery = [d.weekday() in delivery_days for d in snap.dates]
     lead = alerts["order_lead_days"]
     upcoming = [t for t in range(lead, snap.horizon) if is_delivery[t]]
@@ -218,6 +253,7 @@ def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
         "cover_days": cover, "cover_capped": capped, "worst_cover_days": worst_cover,
         "next_delivery": next_delivery,
         "arriving_today": round(float(arrivals[0]), 1),
+        "deliveries_from_supply_forecast": product == "RBC" and bool(snap.received),
         "stockout_date": first_short(mid), "worst_stockout_date": first_short(busy),
         "shortfall_before_delivery": round(short_before, 1),
         "worst_shortfall_before_delivery": round(short_before_busy, 1),
