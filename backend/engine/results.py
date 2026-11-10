@@ -1,6 +1,7 @@
 """Write docs/RESULTS.md from the scores saved in the database."""
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 import pandas as pd
@@ -58,6 +59,48 @@ def forecast_section(metrics: pd.DataFrame) -> list[str]:
     return lines
 
 
+def verdict_section(metrics: pd.DataFrame, db_path: Path | None = None) -> list[str]:
+    """A plain statement of whether the model beat the baseline, and how rare series are handled."""
+    if "m1" not in set(metrics["model"]) or "baseline" not in set(metrics["model"]):
+        return []
+    everything = metrics[metrics["segment_type"] == "all"].set_index("model")
+    b, m = everything.loc["baseline"], everything.loc["m1"]
+    def verdict(key: str, name: str, pct: bool) -> str:
+        fmt = (lambda v: f"{v * 100:.1f}%") if pct else (lambda v: f"{v:.3f}")
+        change = (m[key] - b[key]) / b[key] * 100
+        word = "better" if change < -0.5 else ("worse" if change > 0.5 else "about the same")
+        return f"- {name}: baseline {fmt(b[key])}, model {fmt(m[key])} ({abs(change):.1f}% {word})."
+    lines = ["### Did the model beat the baseline?", "",
+             verdict("mae", "MAE", False), verdict("wape", "WAPE", True),
+             verdict("wape_7day", "7-day WAPE", True), ""]
+    wins = sum((m[k] - b[k]) / b[k] < -0.005 for k in ("mae", "wape_7day"))
+    if wins == 2:
+        lines.append("**Plainly:** the model beats the 4-week average on demand, by a small margin. Demand in this "
+                     "dataset is nearly flat through the year, so there is little for any model to find. "
+                     "The larger gain is in the supply forecast below.")
+    elif wins == 0:
+        lines.append("**Plainly:** the model does not beat the 4-week average on demand. Demand in this dataset is "
+                     "nearly flat through the year. The gain is in the supply forecast below.")
+    else:
+        lines.append("**Plainly:** the result is mixed. The model is better on one measure and not on the other. "
+                     "Demand in this dataset is nearly flat through the year; the clearer gain is in the supply "
+                     "forecast below.")
+    lines.append("")
+    if table_exists("model_note", db_path):
+        note = read("SELECT key, value FROM model_note", path=db_path).set_index("key")["value"]
+        lines += [
+            "### Rare series", "",
+            f"A series is rare when at least three quarters of its last 26 weeks had no request "
+            f"({float(note['rare_share']) * 100:.0f}% of series). We do not chase precision on these. "
+            f"On {len(ast.literal_eval(note['dates']))} dates before the test window, the baseline had MAE "
+            f"{float(note['mae_baseline']):.4f} on rare series and the pooled model {float(note['mae_model']):.4f}, "
+            f"so rare series use the **{note['in_use']}**"
+            + ("" if note["in_use"] == note["better"] else f" (the other option, {note['better']}, scored better)")
+            + ". The staff-set minimum stock protects these groups.", "",
+        ]
+    return lines
+
+
 def render(db_path: Path | None = None) -> str:
     settings = config.load_settings("thresholds")
     metrics = read("SELECT * FROM backtest_metric", path=db_path)
@@ -89,6 +132,7 @@ def render(db_path: Path | None = None) -> str:
         "A well-set range hits about 80%.",
         "",
         *forecast_section(metrics),
+        *verdict_section(metrics, db_path),
     ]
     if table_exists("supply_metric", db_path):
         from backend.engine.supply_backtest import results_section as supply_section

@@ -4,6 +4,7 @@ import { QuietState } from './components/States'
 import { t } from './i18n/en'
 import { api, ApiError, clearCache, getWithCache, readCache, saveCache } from './lib/api'
 import { go, useRoute } from './lib/route'
+import { AccuracyPage } from './pages/AccuracyPage'
 import { BriefPage } from './pages/BriefPage'
 import { DecisionsPage } from './pages/DecisionsPage'
 import { DetailPanel } from './pages/DetailPanel'
@@ -134,6 +135,13 @@ export default function App() {
         </>
       ) : route.page === 'decisions' ? (
         <DecisionsPage user={user} />
+      ) : route.page === 'accuracy' ? (
+        <AccuracyPage
+          onMode={(m) => {
+            setMode(m)
+            setRefreshKey((k) => k + 1)
+          }}
+        />
       ) : (
         <QuietState title={t.common.comingSoon} text="" />
       )}

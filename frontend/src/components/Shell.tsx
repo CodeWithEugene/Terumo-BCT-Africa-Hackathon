@@ -226,8 +226,8 @@ export function Shell({
 export function SectionLabel({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <h2 className="shrink-0 text-xs font-medium tracking-[0.08em] text-muted uppercase">{children}</h2>
-      <span className="h-px flex-1 bg-line" aria-hidden="true" />
+      <h2 className="min-w-0 text-xs font-medium tracking-[0.08em] text-muted uppercase">{children}</h2>
+      <span className="h-px min-w-4 flex-1 bg-line" aria-hidden="true" />
       {aside}
     </div>
   )

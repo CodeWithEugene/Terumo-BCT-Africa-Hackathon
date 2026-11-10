@@ -117,11 +117,71 @@ def save(forecasts: pd.DataFrame, metrics: pd.DataFrame, panel: DemandPanel, db_
         conn.close()
 
 
+def store_prepared_dates(panel: DemandPanel, model_name: str, db_path: Path | None = None) -> None:
+    """Also store forecasts for the app's prepared dates that are outside the test window.
+
+    They are never scored; they only let the app open those dates without retraining.
+    """
+    tested = set(origins())
+    extra = [pd.Timestamp(str(d["date"])) for d in config.load_settings("site")["as_of_dates"]]
+    extra = [d for d in extra if d not in tested]
+    if not extra:
+        return
+    forecasts = run_forecasts(panel, model_name, origin_dates=extra)
+    meta = panel.series[["facility_id", "component", "blood_group"]]
+    table = forecasts.merge(meta, left_on="series", right_index=True)[
+        ["origin", "facility_id", "component", "blood_group", "target_date", "model", "p10", "p50", "p90"]].copy()
+    for column in ("origin", "target_date"):
+        table[column] = table[column].dt.strftime("%Y-%m-%d")
+    table[["p10", "p50", "p90"]] = table[["p10", "p50", "p90"]].round(3)
+    conn = sqlite3.connect(db_path or config.DB_PATH)
+    try:
+        table.to_sql("forecast", conn, if_exists="append", index=False)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def stored_forecast(panel: DemandPanel, model_name: str, as_of, horizon: int, db_path: Path | None = None):
+    """Forecast arrays read back from the `forecast` table, or None if they are not there."""
+    from backend.db.core import read, table_exists
+
+    if not table_exists("forecast", db_path):
+        return None
+    rows = read("SELECT facility_id, component, blood_group, target_date, p10, p50, p90 FROM forecast "
+                "WHERE model = ? AND origin = ?", (model_name, str(pd.Timestamp(as_of).date())),
+                parse_dates=["target_date"], path=db_path)
+    if len(rows) != horizon * len(panel.series):
+        return None
+    rows["series_id"] = rows["facility_id"] + "|" + rows["component"] + "|" + rows["blood_group"]
+    order = pd.Series(np.arange(len(panel.series)), index=panel.series["series_id"])
+    col = order.reindex(rows["series_id"]).to_numpy()
+    row = (rows["target_date"] - pd.Timestamp(as_of)).dt.days.to_numpy()
+    out = {}
+    for name in ("p10", "p50", "p90"):
+        array = np.zeros((horizon, len(panel.series)))
+        array[row, col] = rows[name].to_numpy()
+        out[name] = array
+    return out
+
+
 def run(model_name: str, db_path: Path | None = None, write_docs: bool = True, verbose: bool = True) -> pd.DataFrame:
     panel = load_panel(db_path)
     forecasts = run_forecasts(panel, model_name)
     metrics = score(forecasts, panel)
     save(forecasts, metrics, panel, db_path)
+    store_prepared_dates(panel, model_name, db_path)
+    if model_name == "m1":
+        from backend.engine import model_m1
+
+        note = model_m1.validate_rare_choice(panel)
+        conn = sqlite3.connect(db_path or config.DB_PATH)
+        try:
+            pd.DataFrame([{"key": k, "value": str(v)} for k, v in note.items()]).to_sql(
+                "model_note", conn, if_exists="replace", index=False)
+            conn.commit()
+        finally:
+            conn.close()
     from backend.engine.results import write_results
 
     text = write_results(db_path, write_docs=write_docs)

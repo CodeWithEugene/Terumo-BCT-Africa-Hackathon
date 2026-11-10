@@ -341,4 +341,7 @@ def accuracy() -> dict:
     if table_exists("alert_metric"):
         out["alerts"] = json.loads(read("SELECT * FROM alert_metric").to_json(orient="records"))
         out["alert_rule_cover_days"] = settings["alerts"]["baseline_rule_cover_days"]
+    out["supply"] = json.loads(read("SELECT * FROM supply_metric").to_json(orient="records")) \
+        if table_exists("supply_metric") else []
+    out["rare_note"] = dict(read("SELECT key, value FROM model_note").to_numpy()) if table_exists("model_note") else None
     return out

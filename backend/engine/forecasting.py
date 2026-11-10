@@ -31,7 +31,10 @@ def make(panel: DemandPanel, as_of, horizon: int, model: str = "auto") -> Foreca
     wanted = PREFERRED if model == "auto" else model
     if wanted != baseline.NAME:
         try:
-            out = models.get(wanted).forecast(panel, as_of, horizon)
+            module = models.get(wanted)                    # raises KeyError if the model is not installed
+            from backend.engine.backtest import stored_forecast
+
+            out = stored_forecast(panel, wanted, as_of, horizon) or module.forecast(panel, as_of, horizon)
             return Forecast(out["p10"], out["p50"], out["p90"], wanted, "model", "Using the forecast model.")
         except Exception as error:  # noqa: BLE001  (any failure must fall back, not crash)
             reason = ("The forecast model is not available"

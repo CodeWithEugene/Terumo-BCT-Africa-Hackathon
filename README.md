@@ -36,11 +36,13 @@ they supply.
     stock runs out, the reasons, compatible stock (information only), and the suggestion with its sum.
     Accept, Change or Reject; Change and Reject need a reason. A 10-second undo. A Decisions page lists the log.
     A switch shows what really happened next, which the forecast never sees.
+  - A pooled forecast model (gradient boosting, trained across all hospitals) compared with the baseline on the
+    same test dates, and an Accuracy page that shows both sets of numbers, a table by kind of hospital and the
+    fallback switch.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The accuracy, regional and privacy screens are still to come.
+  - The regional and privacy screens are still to come.
   - The "View as FHIR" link on an accepted order comes with the standards step.
-  - The trained forecast model (Step 7) is not built yet, so the app currently runs in fallback mode.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.
 
@@ -99,8 +101,25 @@ Open http://localhost:5173. Stop with Ctrl+C.
 To come (Step 11). The planned data flow is in section 5 of `docs/BUILD_PLAN.md`.
 
 ## AI and data
-In progress. The baseline and the alert check are built; results are in `docs/RESULTS.md`.
-The trained model and the side-by-side comparison come in Step 7.
+All numbers below are computed by `python -m backend.pipeline.build` and written to `docs/RESULTS.md`.
+Test period: 16 Mondays from 6 July to 19 October 2026. On each date the forecasts see only earlier days.
+
+- What the AI or data feature does: forecasts demand per hospital, product and blood group for 14 days;
+  forecasts red cell supply per regional centre for 4 weeks from the drive schedule; projects each shelf
+  forward and warns before a shortage.
+- Baseline we compared against: the average of the same weekday over the last 4 weeks (demand); the average
+  of the last 4 weeks (supply); "cover under 3 days on the 28-day average" (alerts).
+- Result:
+  - Supply (cleared red cell units per centre and week): baseline 58% error vs ours 26%.
+  - Demand (7-day totals): baseline 71.3% error vs ours 67.9%. A small gain: demand is nearly flat all year.
+  - Early warning: the simple rule warned before 65% of real shortages, ours before 76%, with about the same
+    share of false alarms (27% and 28% of warnings were followed by a real shortage).
+- How a user sees the reason for a recommendation: two or three short sentences beside each alert, built by
+  templates from computed numbers, and the suggested quantity shown as a sum of its parts.
+- Who approves it (Accept / Change / Reject): the signed-in officer. Change and Reject need a reason.
+  Every decision is written to an append-only audit log with what the person was shown.
+- What happens if the AI is wrong or offline: a switch on the Accuracy page, or any failure of the model,
+  makes every screen use the 4-week average and say so. The last brief is kept in the browser for offline use.
 
 ## Data
 The organisers' synthetic starter dataset, in `data/raw/`. Tables used: facilities, routes, drives, donations,

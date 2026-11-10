@@ -44,3 +44,11 @@ supply:
   max_testing_wait_days: 10
   unplanned_venues: [emergency_appeal]   # not known in advance, so never used as "scheduled"
   use_in_projection: true        # project hospital deliveries from the supply forecast
+
+# --- Forecast model M1 -------------------------------------------------------------
+model:
+  rare_zero_week_share: 0.75     # a series is "rare" if this share of its last 26 weeks had no request
+  rare_method: baseline          # how rare series are forecast: "baseline" or "model" (chosen before the test window; see docs/RESULTS.md)
+  validation_origins: [2026-06-01, 2026-06-08, 2026-06-15, 2026-06-22]   # used only to choose rare_method
+  max_iter: 150
+  learning_rate: 0.06
