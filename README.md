@@ -198,8 +198,13 @@ runs inside the product: forecasts are statistical models and the reasons are wr
 ## Team
 | Name | Role | Country | Presenting Friday (in person / online) |
 |------|------|---------|-----------------------------------------|
-| Linet (to complete) | Team lead; data lead (to confirm) | Kenya (to confirm) | to confirm |
-| (to complete) | | | |
+| Linet Mugwanja | to confirm | Kenya | to confirm |
+| Eugene Mutembei | to confirm | Kenya | to confirm |
+| Jael Wainaina | to confirm | Kenya | to confirm |
+| Washington Adiado | to confirm | Kenya | to confirm |
+| Trixy Wangui Wainaina | to confirm | Kenya | to confirm |
+
+Data lead: to confirm (one named person from the table above).
 
 ## Known limits and next steps
 - **Accuracy:** most warnings are still false alarms (about 28% are followed by a real shortage), and the
