@@ -2,7 +2,6 @@
 
 Terumo BCT Africa Hackathon 2026 · Challenge area: forecasting and stock-out early warning
 
-> Build in progress. Sections marked "to come" are filled in as each step of `docs/BUILD_PLAN.md` is finished.
 > All data is the organisers' synthetic starter dataset. Nothing here describes a real hospital, donor or patient.
 
 ## The problem
@@ -53,7 +52,10 @@ they supply.
   - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The central database sync and the architecture diagram are still to come.
+  - The central database sync is written and tested up to the connection, but has **not been run against a
+    real Oracle database**. Until it is, the Data & privacy page shows "never" for the last sync.
+  - There is no deployment. The app runs on one computer.
+  - Security is a self-review (`docs/SECURITY.md`), not an independent test.
   - The FHIR order is FHIR-shaped: field names were checked against the HL7 R4 page, but it has not been run
     through a validator, and product codes are local stand-ins for ISBT 128 codes.
   - The DHIS2 export uses made-up element and organisation unit IDs (an illustrative mapping).
@@ -63,8 +65,8 @@ they supply.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.
 
-Demo video (3 minutes or less): to come
-Live demo: to come · Test log-ins (demo only): `amina` / `thika-demo`, `joseph` / `maternity-demo`,
+Demo video (3 minutes or less): to come (script in `docs/DEMO_SCRIPT.md`)
+Live demo: none (not deployed) · Test log-ins (demo only): `amina` / `thika-demo`, `joseph` / `maternity-demo`,
 `grace` / `nairobi-demo`
 
 ## How to run it
@@ -93,7 +95,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**2. Build the database from the raw files** (about 15 seconds; prints the data facts)
+**2. Build the database from the raw files** (1 to 3 minutes: it also trains and tests the forecasts)
 ```bash
 python -m backend.pipeline.build
 ```
@@ -112,10 +114,36 @@ python -m backend.engine.brief --facility HSP-006 --as-of 2026-10-05
 ```bash
 python scripts/dev.py
 ```
-Open http://localhost:5173. Stop with Ctrl+C.
+Open http://localhost:5173 and choose one of the three test accounts. Stop with Ctrl+C.
+
+**Optional: central database sync** (does nothing, and says so, unless the Oracle settings are in `.env`)
+```bash
+python -m backend.sync.oracle
+```
+
+If `pip install` stops with "Read timed out" on a slow connection, run
+`pip install --default-timeout=120 --retries 10 -r requirements.txt`.
 
 ## Architecture
-To come (Step 11). The planned data flow is in section 5 of `docs/BUILD_PLAN.md`.
+![Architecture diagram](docs/architecture.svg)
+
+- **Data flow:** raw files → pipeline (cleans, drops person-level columns) → local SQLite database → forecasts
+  (demand and supply) → stock projection, alerts and suggested orders → API → web app. A person's decision goes
+  back into the local database and its append-only audit log.
+- **Local first:** everything on the solid arrows runs on one device with no internet. The central copy is
+  optional and one way.
+- **Where it can fail, and what happens:** if the forecast model is missing or errors, the 4-week average is
+  used and every screen says so. If the supply forecast fails, usual delivery quantities are used. If the server
+  cannot be reached, the browser shows the last brief with a banner. If the central copy is not set up, the sync
+  command says so and exits.
+- **Where this sits in a blood-bank information system:** it reads counts (stock, requests, deliveries, drives)
+  and hands back approved orders. It does not register donors, label units or record transfusions.
+- **Standards:** an accepted order is served as a FHIR R4-shaped `SupplyRequest`; monthly indicators as a
+  DHIS2-shaped `dataValueSet`; the dataset's unit label stands in for an ISBT 128 donation number. The mapping
+  and its limits are in `docs/STANDARDS.md`.
+
+Repo layout: `backend/pipeline` (data), `backend/engine` (forecasts, projection, alerts, regional view),
+`backend/api` (server), `backend/sync` (central copy), `frontend` (web app), `config` (settings), `tests`, `docs`.
 
 ## AI and data
 All numbers below are computed by `python -m backend.pipeline.build` and written to `docs/RESULTS.md`.
@@ -144,15 +172,50 @@ units, transfers, requests, daily_stock, power_outages, temperature_logs.
 The donor table is deliberately not in this repo and is never loaded. No real donor, patient or facility data.
 
 ## African conditions
-To come (Steps 5 and 9): offline use, slow connections, phones, languages and settings for another country.
+- **Power and connectivity:** the tool runs on one laptop with a local database and no internet. The browser
+  keeps the last brief and shows it with a banner when the server cannot be reached ("Simulate offline" shows
+  this). The working screens have no animation and the whole app is about 140 KB of script, for slow links.
+- **Phones:** every screen works at 360 pixels wide, with a bottom navigation bar and 44-pixel touch targets.
+  An SMS preview shows the day's alerts in 160 characters (demo only; nothing is sent).
+- **Languages:** every sentence a user reads is in one file (`frontend/src/i18n/en.ts`), so a language can be
+  added without touching screens. The privacy notice is in English and Swahili (Swahili not yet checked).
+- **Another site or country:** school terms, public holidays and malaria months are in
+  `config/calendar_ke.yaml`; alert thresholds and minimum stock in `config/thresholds.yaml`; shelf lives and
+  blood groups in `config/blood.yaml`; roles in `config/access.yaml`. Change settings, not code.
+- **Existing systems:** FHIR and DHIS2 shaped outputs (see Architecture).
+- **Rules that reflect how blood moves here:** any early delivery or extra collection is a request for
+  approval, never an order. Compatible stock is shown as information only.
 
 ## AI tools we used
-To come (Step 11).
+| Tool | What we used it for |
+| --- | --- |
+| Claude Code (Anthropic) | Writing and testing the code in this repo during the hackathon, under the team's direction: the data pipeline, forecasts, API, web app, tests and documentation drafts. It also checked the screens with screenshots. |
+
+The team set the plan and the rules (`docs/BUILD_PLAN.md`, `CLAUDE.md`), chose the problem and the design
+direction, checked the data findings, ran and reviewed each step, and can explain the code. No language model
+runs inside the product: forecasts are statistical models and the reasons are written by templates.
 
 ## Team
 | Name | Role | Country | Presenting Friday (in person / online) |
 |------|------|---------|-----------------------------------------|
-| To come | | | |
+| Linet (to complete) | Team lead; data lead (to confirm) | Kenya (to confirm) | to confirm |
+| (to complete) | | | |
 
 ## Known limits and next steps
-To come.
+- **Accuracy:** most warnings are still false alarms (about 28% are followed by a real shortage), and the
+  median warning comes 1 to 2 days ahead. The demand model beats the 4-week average only slightly.
+- **Synthetic data:** every number describes the model dataset, not real hospitals. The approach needs testing
+  on real stock and request records.
+- **Hospital deliveries** are only slightly better predicted than by their 4-week average; some hospitals in
+  the data live almost entirely on emergency deliveries.
+- **Units exposed to a warm fridge** cannot be dated from the data, so they are not removed from projected stock.
+- **Calendar:** school terms, public holidays and malaria months are approximate settings to confirm.
+- **Platelets** are not held at hospitals in this dataset, so they have a demand forecast but no shelf projection.
+- **Privacy and compliance, before real use:** a data protection impact assessment (DPIA), registration with the
+  Office of the Data Protection Commissioner (ODPC), processor agreements with any hosting company, a decision
+  on the hosting region, and small-count suppression outside the hospital.
+- **Security, before real use:** remove the test log-ins, HTTPS, an independent penetration test, account
+  management (see `docs/SECURITY.md`).
+- **Standards:** ISBT 128 product codes, a FHIR validator run, and real DHIS2 element IDs.
+- **Next:** test with a blood bank officer, add Swahili screens, send the approved SMS through a gateway, and
+  model what each hospital will actually receive more closely.
