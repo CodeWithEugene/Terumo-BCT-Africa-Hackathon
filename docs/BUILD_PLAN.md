@@ -392,3 +392,22 @@ and fast: people use them every morning, sometimes on 3G.
 - **Cut line:** a still hero with the illustration and the sign-in cards. Skip the scroll story.
 - **Commit:** `Add landing page`
 - Order of sacrifice: this step is dropped before anything in Steps 0 to 7, 9 or 11.
+
+### Imagery Linet likes on demophorius.com: 3D test tubes and blood bags
+
+- **Test tubes with depth, floating in the background.** Build our own: a few tubes drawn in SVG
+  with glass highlights, a rounded base and a liquid level, placed at different depths with CSS
+  perspective, slightly blurred when further back, drifting and rotating a few degrees on scroll.
+  Use them behind the landing page story (Step 7b) and, very faintly and without motion, in the
+  sign-in screen background. Never behind data in the working app.
+- **Blood bags.** One clean illustrated blood bag in the same SVG style (bag outline, label, tubing,
+  deep red fill with a soft highlight) as the hero object on the landing page. It is the object that
+  fills as the reader scrolls.
+- **The tube motif inside the app, kept quiet.** The cover bar for each blood group may be drawn as
+  a slim horizontal tube: rounded glass outline, fill in the status colour, a tick for the next
+  delivery. This ties the landing page to the product without adding decoration.
+- **Do not use demophorius.com's images, or any other site's.** Everything is drawn by us in SVG
+  and CSS. If a photograph is wanted, use only an openly licensed one, and record its source and
+  licence in the README under "Data". Ask Linet before adding any photo.
+- Keep all of it light: SVG and CSS only, no 3D engine, no video. Still images when
+  `prefers-reduced-motion` is set.
