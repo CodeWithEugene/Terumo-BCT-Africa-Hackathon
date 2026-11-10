@@ -65,8 +65,9 @@ they supply.
     cover, and a replay of the test period compares that with what really happened (see AI and data).
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The central database sync is written and tested up to the connection, but has **not been run against a
-    real Oracle database**. Until it is, the Data & privacy page shows "never" for the last sync.
+  - The central database sync has run once against a real Oracle Autonomous Database (11 Nov 2026: seven
+    tables, 192,816 rows, staff names replaced by codes). It is a one-way copy; nothing reads from it yet, and
+    the hosting region still has to be written on the Data & privacy page.
   - There is no deployment. The app runs on one computer.
   - Security is a self-review (`docs/SECURITY.md`), not an independent test.
   - The FHIR order is FHIR-shaped: field names were checked against the HL7 R4 page, but it has not been run
