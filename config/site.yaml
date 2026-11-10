@@ -1,0 +1,18 @@
+# Site settings. Change these, not the code, to set the tool up somewhere else.
+
+country: Kenya
+timezone_label: EAT            # shown next to times
+calendar_file: calendar_ke     # config/calendar_ke.yaml
+
+# The data is historical, so the app works "as of" a date. Everything from
+# that date on is hidden from the forecast. All dates are Mondays.
+# The default is the week before supply worsens in October 2026; 30 March is
+# the week before the April school holiday (see docs/DATA_FACTS.md, unmet units by month).
+default_as_of: 2026-09-28
+as_of_dates:
+  - {date: 2026-03-30, note: Five days before the April school holiday}
+  - {date: 2026-07-13, note: Term 2, three weeks before schools close}
+  - {date: 2026-08-03, note: First week of the August school holiday}
+  - {date: 2026-09-28, note: Term 3, the week before shortages rise}
+  - {date: 2026-10-05, note: Term 3, shortages rising}
+  - {date: 2026-10-19, note: Ten days before the long holiday}
