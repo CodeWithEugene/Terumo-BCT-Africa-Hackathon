@@ -8,6 +8,7 @@ import { AccuracyPage } from './pages/AccuracyPage'
 import { BriefPage } from './pages/BriefPage'
 import { DecisionsPage } from './pages/DecisionsPage'
 import { DetailPanel } from './pages/DetailPanel'
+import { RegionPage } from './pages/RegionPage'
 import { SignIn } from './pages/SignIn'
 import { cx } from './lib/format'
 import type { AsOfDates, Component, ModeInfo, ReasonCodes, User } from './types'
@@ -135,6 +136,17 @@ export default function App() {
         </>
       ) : route.page === 'decisions' ? (
         <DecisionsPage user={user} />
+      ) : route.page === 'region' && user.role === 'regional_officer' ? (
+        <RegionPage
+          asOf={asOf}
+          codes={codes}
+          onMode={onMode}
+          onOpen={(facility, seriesId) => {
+            setFacilityId(facility)
+            setComponent('RBC')
+            go({ page: 'group', id: seriesId })
+          }}
+        />
       ) : route.page === 'accuracy' ? (
         <AccuracyPage
           onMode={(m) => {

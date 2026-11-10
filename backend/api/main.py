@@ -94,6 +94,12 @@ def overview(as_of: str | None = None, component: Component = "RBC", user: User 
     return service.overview(user, as_of, component)
 
 
+@app.get("/api/region", dependencies=[Depends(ready)])
+def region(as_of: str | None = None, extra_donors: int | None = None, extra_date: str | None = None,
+           user: User = Depends(current_user)) -> dict:
+    return service.region(user, as_of, extra_donors, extra_date)
+
+
 @app.get("/api/series/{series_id:path}", dependencies=[Depends(ready)])
 def series(series_id: str, as_of: str | None = None, user: User = Depends(current_user)) -> dict:
     return service.series_detail(user, series_id, as_of)

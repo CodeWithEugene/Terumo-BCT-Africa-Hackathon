@@ -99,7 +99,7 @@ export function DecisionsPage({ user }: { user: User }) {
                 )}
                 <span className="text-lg font-semibold text-ink">{d.blood_group_label}</span>
                 <span className="text-sm">
-                  {d.component === 'RBC' ? 'Red cells' : d.component === 'FFP' ? 'Plasma' : 'Platelets'} · {d.facility_name}
+                  {d.suggestion_kind === 'drive' ? 'Collections' : d.component === 'RBC' ? 'Red cells' : d.component === 'FFP' ? 'Plasma' : 'Platelets'} · {d.facility_name}
                 </span>
                 <span className="ml-auto text-[0.8125rem] text-muted">{d.at_label}</span>
               </div>
@@ -107,13 +107,14 @@ export function DecisionsPage({ user }: { user: User }) {
                 <div>
                   <dt className="text-[0.8125rem] text-muted">{t.decisions.suggested}</dt>
                   <dd className="text-ink">
-                    {t.decisions.kind[d.suggestion_kind] ?? d.suggestion_kind}: {t.common.units(d.suggested_quantity)}
+                    {t.decisions.kind[d.suggestion_kind] ?? d.suggestion_kind}:{' '}
+                    {d.suggestion_kind === 'drive' ? `${d.suggested_quantity} donors` : t.common.units(d.suggested_quantity)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[0.8125rem] text-muted">{t.decisions.decided}</dt>
                   <dd className="font-medium text-ink">
-                    {d.action === 'reject' ? t.decisions.reject : t.common.units(d.final_quantity)}
+                    {d.action === 'reject' ? t.decisions.reject : d.suggestion_kind === 'drive' ? `${d.final_quantity} donors` : t.common.units(d.final_quantity)}
                     <span className="font-normal text-body">
                       {' '}
                       · {d.display_name}

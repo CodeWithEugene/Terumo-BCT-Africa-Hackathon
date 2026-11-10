@@ -94,7 +94,7 @@ def _history_features(panel: DemandPanel, csum: np.ndarray, csum_em: np.ndarray,
 def _weekday_profile(panel: DemandPanel, cut: int) -> np.ndarray:
     """Each series' share of demand by weekday (rows: weekday of the forecast day). Shape (7, series)."""
     y = panel.requested[max(0, cut - 56):cut]
-    weekdays = panel.dates[max(0, cut - 56):cut].dayofweek.to_numpy()
+    weekdays = panel.dates[max(0, cut - 56):cut].day_of_week.to_numpy()
     totals = np.stack([y[weekdays == d].sum(axis=0) for d in range(7)])          # (7, series)
     # Fall back to the pattern of the same product at all hospitals when a series has too little history.
     codes = pd.Categorical(panel.series["component"]).codes
@@ -163,7 +163,7 @@ def forecast(panel: DemandPanel, origin, horizon: int | None = None, rare_method
     days = pd.date_range(pd.Timestamp(origin), periods=horizon)
     out = {name: np.zeros((horizon, len(panel.series))) for name in ("p10", "p50", "p90")}
     for t, day in enumerate(days):
-        share = profile[day.dayofweek]
+        share = profile[day.day_of_week]
         week = t // 7
         out["p50"][t] = weekly["p50"][week] * share
         # Daily margins are scaled so that a week of them adds back up to the weekly range.

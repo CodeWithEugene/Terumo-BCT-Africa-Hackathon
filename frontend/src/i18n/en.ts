@@ -141,7 +141,7 @@ export const en = {
     decided: 'Decided',
     withdrawn: 'Undone',
     forDate: (d: string) => `for ${d}`,
-    kind: { order: 'Order', early_delivery: 'Early delivery request' } as Record<string, string>,
+    kind: { order: 'Order', early_delivery: 'Early delivery request', drive: 'Extra collections' } as Record<string, string>,
     seenStatus: 'Status shown',
     mode: { model: 'Forecast model', fallback: '4-week average' } as Record<string, string>,
     allHospitals: 'All hospitals',
@@ -189,6 +189,42 @@ export const en = {
       mission_hospital: 'Mission hospital', national_referral: 'National referral hospital', private_hospital: 'Private hospital',
       sub_county_hospital: 'Sub-county hospital',
     } as Record<string, string>,
+  },
+
+  region: {
+    label: 'Regional view',
+    headline: (act: number, hospitals: number, change: number) =>
+      `${act === 0 ? 'No hospital needs' : act === 1 ? 'One hospital needs' : `${act} of ${hospitals} hospitals need`} action today. ` +
+      (Math.abs(change) < 5
+        ? 'Supply over the next 4 weeks looks about usual.'
+        : `Supply over the next 4 weeks looks ${Math.abs(change)}% ${change < 0 ? 'below' : 'above'} usual.`),
+    gridLabel: 'Hospitals and blood groups, red cells',
+    gridHelp: 'Each square is days of cover. Most urgent hospital first. Tap a square to open it.',
+    legend: 'Days of cover',
+    nextDelivery: (d: string) => `Next delivery ${d}`,
+    cell: (group: string, status: string, cover: string) => `${group}: ${status}, ${cover}`,
+    supplyLabel: 'Supply outlook, next 4 weeks',
+    supplyHelp: (rate: number, wait: number) =>
+      `Expected usable red cell units from scheduled drives: usual turnout for each kind of venue, times ${rate} usable units per donation after deferrals and screening, shifted by the testing wait (typically ${wait} days).`,
+    expected: 'expected to clear',
+    usual: (n: number) => `usual ${n}`,
+    drives: (n: number, donors: number) => `${n} ${n === 1 ? 'drive' : 'drives'} scheduled, about ${donors} donors`,
+    schoolBreak: 'School break',
+    gapLabel: 'Gap: what hospitals need against what the centre will have',
+    gapHelp: 'Units short per blood group and week, after the centre\'s stock and expected clearing. A dash means enough.',
+    stockNow: 'In stock now',
+    short: (n: number) => `${n} short`,
+    enough: 'enough',
+    allGroups: 'All groups',
+    suggestLabel: 'Suggestions for extra collections',
+    suggestNone: 'No gap is projected 2 to 4 weeks out, so no extra drive is suggested.',
+    whatIfLabel: 'What if we add a drive?',
+    whatIfHelp: 'Try a drive and see the gap change. Nothing is saved or booked.',
+    donors: 'Expected donors',
+    date: 'Date',
+    tryIt: 'Try it',
+    clear: 'Clear',
+    whatIfOn: (donors: number, date: string) => `Showing a what-if: one extra drive of ${donors} donors on ${date}. Not saved.`,
   },
 
   common: {

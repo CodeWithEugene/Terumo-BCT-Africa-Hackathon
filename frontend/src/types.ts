@@ -48,7 +48,8 @@ export interface SuggestionPart {
 }
 
 export interface Suggestion {
-  kind: 'order' | 'early_delivery'
+  kind: 'order' | 'early_delivery' | 'drive'
+  unit_word?: string
   title: string
   needs_approval: string | null
   quantity: number
@@ -179,4 +180,59 @@ export interface AsOfDates {
 export interface ReasonCodes {
   change: { code: string; label: string }[]
   reject: { code: string; label: string }[]
+}
+
+export interface RegionWeek {
+  week: number
+  start: string
+  label: string
+  short_label: string
+  school_break: boolean
+  expected_cleared: number
+  usual_cleared: number
+  demand: number
+  units_short: number
+  scheduled_drives: number
+  expected_donors: number
+}
+
+export interface DriveSuggestion {
+  id: string
+  as_of: string
+  week: number
+  week_label: string
+  school_break: boolean
+  groups_short: string[]
+  text: string
+  venue_text: string
+  suggestion: Suggestion
+  decision?: Decision | null
+  action_label?: string
+}
+
+export interface RegionView extends ModeInfo {
+  as_of: string
+  centre: { facility_id: string; name: string; region_name: string }
+  weeks: RegionWeek[]
+  groups: {
+    blood_group: string
+    blood_group_label: string
+    stock_now: number
+    weeks: { week: number; demand: number; cleared: number; short: number; stock_end: number }[]
+  }[]
+  drive_suggestions: DriveSuggestion[]
+  supply_change_pct: number
+  rates: { units_per_donation: number; median_testing_wait_days: number }
+  what_if: { date: string; donors: number }[]
+  notes: string[]
+}
+
+export interface Overview extends ModeInfo {
+  as_of: string
+  facilities: (Facility & {
+    act: number
+    watch: number
+    next_delivery_label: string | null
+    groups: { id: string; blood_group: string; blood_group_label: string; status: Status; status_label: string; cover_days: number | null; cover_capped: boolean; units_on_shelf: number }[]
+  })[]
 }

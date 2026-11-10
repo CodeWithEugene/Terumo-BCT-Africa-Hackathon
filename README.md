@@ -39,9 +39,14 @@ they supply.
   - A pooled forecast model (gradient boosting, trained across all hospitals) compared with the baseline on the
     same test dates, and an Accuracy page that shows both sets of numbers, a table by kind of hospital and the
     fallback switch.
+  - A regional view for the regional centre officer: every hospital and blood group in one grid, the supply
+    outlook for 4 weeks, the gap against demand by blood group, suggestions for extra collections (each with
+    Accept, Change or Reject), and a "what if we add a drive" try-out that saves nothing.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The regional and privacy screens are still to come.
+  - The privacy screen, the standards endpoints (FHIR, DHIS2), the offline switch and the landing page are
+    still to come.
+  - Drive suggestions are requests to a drive planner. Nothing is booked and no donor is contacted.
   - The "View as FHIR" link on an accepted order comes with the standards step.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.

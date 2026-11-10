@@ -57,6 +57,8 @@ class SupplyForecast:
     received_baseline: np.ndarray  # (hospitals, groups, weeks) 4-week average
     cleared_recent: np.ndarray     # (centres, groups) average cleared a week over the last 4 weeks
     scheduled_drives: pd.DataFrame # the drives counted, with expected collections
+    rates: dict = None             # the learned rates behind the forecast
+    loss_rate: np.ndarray = None   # (centres, groups) share of available units lost each week
 
 
 def _dense(index: list, groups: list, dates: pd.DatetimeIndex, frame: pd.DataFrame, key: str, value: str) -> np.ndarray:
@@ -110,7 +112,8 @@ def _weekly_back(array: np.ndarray, cut: int, weeks: int) -> np.ndarray:
     return np.stack(blocks[::-1], axis=-1)
 
 
-def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, weeks: int) -> tuple[np.ndarray, pd.DataFrame]:
+def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, weeks: int,
+                      extra_drives: list[dict] | None = None) -> tuple[np.ndarray, pd.DataFrame, dict]:
     """Expected cleared red cell units per centre, group and week, from the drive schedule."""
     settings = config.load_settings("thresholds")["supply"]
     max_wait = settings["max_testing_wait_days"]
@@ -158,6 +161,11 @@ def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, we
     ahead["expected_collected"] = [usual_yield(c, v) for c, v in zip(ahead["centre"], ahead["venue_type"])]
     ahead["known"] = False
     counted = pd.concat([recent, ahead], ignore_index=True)
+    # "What if we add a drive?" Extra drives are held at the regional centre itself.
+    for extra in extra_drives or []:
+        counted = pd.concat([counted, pd.DataFrame([{
+            "date": pd.Timestamp(extra["date"]), "centre": extra["centre"], "collecting_site_id": extra["centre"],
+            "venue_type": "what_if", "expected_collected": float(extra["donors"]), "known": False}])], ignore_index=True)
 
     out = np.zeros((len(hist.centres), len(hist.groups), weeks))
     centre_index = {c: i for i, c in enumerate(hist.centres)}
@@ -172,10 +180,20 @@ def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, we
             if 0 <= day < 7 * weeks and share > 0:
                 out[centre_index[row.centre], :, day // 7] += units * share * shares
     schedule = ahead[["date", "centre", "collecting_site_id", "venue_type", "expected_collected"]].copy()
-    return out, schedule
+    in_break = past.merge(world.calendar.reset_index()[["date", "school_in_session"]].drop_duplicates("date"), on="date")
+    planned = in_break[~in_break["venue_type"].isin(settings["unplanned_venues"])]
+    rates = {
+        "units_per_donation": {c: float(v) for c, v in per_donation.items()},
+        "venue_yield_in_breaks": planned[planned["school_in_session"] == 0].groupby("venue_type")["donations_collected"]
+        .agg(["mean", "count"]).reset_index().to_dict("records"),
+        "venue_yield_in_term": planned[planned["school_in_session"] == 1].groupby("venue_type")["donations_collected"]
+        .agg(["mean", "count"]).reset_index().to_dict("records"),
+        "median_testing_wait_days": float(waits.median()) if len(waits) else 0.0,
+    }
+    return out, schedule, rates
 
 
-def forecast(world: World, as_of, weeks: int | None = None) -> SupplyForecast:
+def forecast(world: World, as_of, weeks: int | None = None, extra_drives: list[dict] | None = None) -> SupplyForecast:
     settings = config.load_settings("thresholds")["supply"]
     weeks = weeks or settings["weeks_ahead"]
     as_of = pd.Timestamp(as_of).normalize()
@@ -184,7 +202,7 @@ def forecast(world: World, as_of, weeks: int | None = None) -> SupplyForecast:
     n_back = cut // 7
     base_weeks, share_weeks = settings["baseline_weeks"], settings["share_weeks"]
 
-    cleared, schedule = expected_clearing(world, hist, as_of, weeks)
+    cleared, schedule, rates = expected_clearing(world, hist, as_of, weeks, extra_drives)
     cleared_recent = _weekly_back(hist.cleared, cut, base_weeks).mean(axis=-1)
     cleared_baseline = np.repeat(cleared_recent[..., None], weeks, axis=-1)
 
@@ -241,7 +259,8 @@ def forecast(world: World, as_of, weeks: int | None = None) -> SupplyForecast:
     return SupplyForecast(as_of=as_of, weeks=weeks, cleared=cleared, cleared_baseline=cleared_baseline,
                           shipped=shipped, centre_stock=stock_path, centre_stock_now=stock_now,
                           received=received, received_baseline=received_baseline,
-                          cleared_recent=cleared_recent, scheduled_drives=schedule)
+                          cleared_recent=cleared_recent, scheduled_drives=schedule, rates=rates,
+                          loss_rate=np.clip(loss_rate, 0, 0.9))
 
 
 def actuals(world: World, as_of, weeks: int) -> dict[str, np.ndarray]:

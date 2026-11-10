@@ -18,11 +18,14 @@ export function DecisionBar({
   asOf,
   codes,
   onDecided,
+  keys = true,
 }: {
-  series: Series
+  series: Pick<Series, 'id' | 'as_of' | 'suggestion' | 'decision' | 'action_label'>
   asOf: string
   codes: ReasonCodes | null
   onDecided: () => void
+  /** Keyboard shortcuts. Off where several suggestions are on one screen. */
+  keys?: boolean
 }) {
   const suggestion = series.suggestion
   const [mode, setMode] = useState<Mode>('idle')
@@ -93,7 +96,7 @@ export function DecisionBar({
 
   // Keyboard: A accept, C change, R reject (only when nothing is being typed).
   useEffect(() => {
-    if (!suggestion || decision) return
+    if (!keys || !suggestion || decision) return
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || event.metaKey || event.ctrlKey || event.altKey) return
@@ -105,7 +108,7 @@ export function DecisionBar({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestion, decision, mode, busy, quantity, reason, note])
+  }, [keys, suggestion, decision, mode, busy, quantity, reason, note])
 
   if (!suggestion) return <p className="text-sm">{t.detail.noSuggestion}</p>
 
@@ -118,7 +121,11 @@ export function DecisionBar({
             {decision.summary}
             <span className="font-normal text-body">
               {' · '}
-              {decision.action === 'reject' ? t.decisions.reject : t.common.units(decision.final_quantity)}
+              {decision.action === 'reject'
+                ? t.decisions.reject
+                : suggestion.unit_word
+                  ? `${decision.final_quantity} ${suggestion.unit_word}`
+                  : t.common.units(decision.final_quantity)}
             </span>
           </span>
         </p>
@@ -145,7 +152,7 @@ export function DecisionBar({
           <p className="text-sm font-medium text-ink">{suggestion.title}</p>
           <p className="mt-1 flex items-baseline gap-2">
             <span className="text-[2.500rem] leading-none font-medium tracking-[-0.010em] text-ink">{suggestion.quantity}</span>
-            <span className="text-sm">{suggestion.quantity === 1 ? 'unit' : 'units'}</span>
+            <span className="text-sm">{suggestion.unit_word ?? (suggestion.quantity === 1 ? 'unit' : 'units')}</span>
             {suggestion.kind === 'order' && <span className="text-[0.8125rem] text-muted">{t.detail.usual(suggestion.usual_quantity)}</span>}
           </p>
         </div>
@@ -160,7 +167,7 @@ export function DecisionBar({
             <div key={part.label} className="flex justify-between gap-4 border-t border-line py-1.5">
               <dt>{part.label}</dt>
               <dd className="shrink-0 font-medium text-ink">
-                {part.units < 0 ? '−' : '+'}
+                {suggestion.kind === 'drive' ? '' : part.units < 0 ? '−' : '+'}
                 {Math.abs(part.units)}
               </dd>
             </div>
@@ -202,10 +209,10 @@ export function DecisionBar({
           {mode === 'change' && (
             <div className="mb-4 flex items-center gap-3">
               <span className="text-sm font-medium text-ink" id="qty-label">
-                {t.detail.quantity}
+                {suggestion.unit_word ? suggestion.unit_word.replace(/^d/, 'D') : t.detail.quantity}
               </span>
               <div className="inline-flex items-center rounded-control border border-ink/30">
-                <button type="button" aria-label={t.detail.fewer} className="grid h-11 w-11 place-items-center text-ink disabled:opacity-40" disabled={quantity <= 0} onClick={() => setQuantity((q) => Math.max(0, q - 1))}>
+                <button type="button" aria-label={t.detail.fewer} className="grid h-11 w-11 place-items-center text-ink disabled:opacity-40" disabled={quantity <= 0} onClick={() => setQuantity((q) => Math.max(0, q - (suggestion.kind === 'drive' ? 5 : 1)))}>
                   <Icon name="minus" size={18} />
                 </button>
                 <input
@@ -215,7 +222,7 @@ export function DecisionBar({
                   value={quantity}
                   onChange={(e) => setQuantity(Math.min(500, Math.max(0, Number(e.target.value.replace(/\D/g, '')) || 0)))}
                 />
-                <button type="button" aria-label={t.detail.more} className="grid h-11 w-11 place-items-center text-ink" onClick={() => setQuantity((q) => Math.min(500, q + 1))}>
+                <button type="button" aria-label={t.detail.more} className="grid h-11 w-11 place-items-center text-ink" onClick={() => setQuantity((q) => Math.min(500, q + (suggestion.kind === 'drive' ? 5 : 1)))}>
                   <Icon name="plus" size={18} />
                 </button>
               </div>
@@ -247,7 +254,7 @@ export function DecisionBar({
           </label>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button type="submit" disabled={!canSave}>
-              {mode === 'change' ? t.detail.saveChange(quantity) : t.detail.confirmReject}
+              {mode === 'change' ? (suggestion.unit_word ? `Save change: ${quantity} ${suggestion.unit_word}` : t.detail.saveChange(quantity)) : t.detail.confirmReject}
             </Button>
             <Button variant="text" onClick={() => setMode('idle')}>
               {t.detail.cancel}
@@ -260,7 +267,7 @@ export function DecisionBar({
           {problem}
         </p>
       )}
-      <p className="mt-3 hidden text-[0.8125rem] text-muted xl:block">{t.detail.keys}</p>
+      {keys && <p className="mt-3 hidden text-[0.8125rem] text-muted xl:block">{t.detail.keys}</p>}
     </div>
   )
 }

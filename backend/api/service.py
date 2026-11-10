@@ -90,7 +90,7 @@ def _decision_card(row: dict) -> dict:
     row = {k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in row.items()}
     row["summary"] = f"{verb} by {row['display_name']}, {at:%H:%M}"
     row["at_label"] = f"{words.day(at)} {at:%H:%M}"
-    row["blood_group_label"] = words.group_symbol(row["blood_group"])
+    row["blood_group_label"] = "All groups" if row["blood_group"] == "all" else words.group_symbol(row["blood_group"])
     return row
 
 
@@ -199,7 +199,75 @@ def _both_forecasts(snap: Snapshot, index: int) -> dict:
     return out
 
 
+def region(user: User, as_of: str | None, extra_donors: int | None = None, extra_date: str | None = None) -> dict:
+    """The regional officer's supply view. Hospital officers have no access."""
+    from backend.engine.region import regional_view
+
+    if user.role != "regional_officer":
+        raise HTTPException(status_code=403, detail="This view is for regional centre officers.")
+    snap = snapshot(as_of)
+    extra = None
+    if extra_donors and extra_date:
+        date = pd.Timestamp(extra_date)
+        if not (snap.as_of <= date < snap.as_of + pd.Timedelta(days=28)) or not (1 <= extra_donors <= 2000):
+            raise HTTPException(status_code=422, detail="Choose a date in the next 4 weeks and 1 to 2,000 donors.")
+        extra = [{"date": str(date.date()), "centre": user.facility_id, "donors": int(extra_donors)}]
+    view = regional_view(snap, user.facility_id, extra)
+    open_decisions = _decisions_for(str(snap.as_of.date()), user.facility_id)
+    for item in view["drive_suggestions"]:
+        item["decision"] = open_decisions.get(item["id"])
+        item["action_label"] = "Request approval"
+    return {**mode_info(snap), "as_of": str(snap.as_of.date()), **view}
+
+
+def _record_drive_decision(user: User, body: dict) -> dict:
+    from backend.engine.region import regional_view
+
+    access = config.load_settings("access")
+    action = body["action"]
+    centre = body["series_id"].split("|")[0]
+    if user.role != "regional_officer" or centre != user.facility_id:
+        raise HTTPException(status_code=403, detail="You do not have access to that centre.")
+    snap = snapshot(body.get("as_of"))
+    item = next((s for s in regional_view(snap, centre)["drive_suggestions"] if s["id"] == body["series_id"]), None)
+    if item is None:
+        raise HTTPException(status_code=400, detail="There is no drive suggestion for that week.")
+    suggestion = item["suggestion"]
+    if action in ("change", "reject"):
+        if body.get("reason_code") not in {r["code"] for r in access["reason_codes"][action]}:
+            raise HTTPException(status_code=422, detail="Please choose a reason.")
+        if body["reason_code"] == "other" and not (body.get("note") or "").strip():
+            raise HTTPException(status_code=422, detail="Please add a note to explain \"Other\".")
+    quantity = suggestion["quantity"] if action == "accept" else 0 if action == "reject" else body.get("quantity")
+    if quantity is None or (action == "change" and quantity == suggestion["quantity"]):
+        raise HTTPException(status_code=422, detail="Enter a different number of donors, or use Accept.")
+    as_of = str(snap.as_of.date())
+    note = (body.get("note") or "").strip() or None
+    with session() as conn:
+        if conn.execute("SELECT 1 FROM decision WHERE as_of = ? AND series_id = ? AND withdrawn_at IS NULL",
+                        (as_of, item["id"])).fetchone():
+            raise HTTPException(status_code=409, detail="A decision is already recorded for this week.")
+        cursor = conn.execute(
+            "INSERT INTO decision (created_at, user_id, username, display_name, role, as_of, series_id, facility_id, "
+            "component, blood_group, suggestion_kind, for_date, status_seen, suggested_quantity, action, "
+            "final_quantity, reason_code, note, mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (now(), user.user_id, user.username, user.display_name, user.role, as_of, item["id"], centre, "RBC", "all",
+             "drive", suggestion["for_date"], "watch", suggestion["quantity"], action, int(quantity),
+             body.get("reason_code"), note, snap.forecast.mode))
+        decision_id = cursor.lastrowid
+        _audit(conn, user, "decision", facility_id=centre, series_id=item["id"], as_of=as_of,
+               saw={"text": item["text"], "venues": item["venue_text"], "suggested_quantity": suggestion["quantity"],
+                    "sum": suggestion["sum_text"], "suggestion_kind": "drive", "mode": snap.forecast.mode},
+               decided={"action": action, "final_quantity": int(quantity), "decision_id": decision_id,
+                        "is_request_for_approval": True},
+               reason_code=body.get("reason_code"), note=note)
+        saved = dict(conn.execute("SELECT * FROM decision WHERE decision_id = ?", (decision_id,)).fetchone())
+    return {**mode_info(snap), "decision": _decision_card(saved), "undo_seconds": access["undo_seconds"]}
+
+
 def record_decision(user: User, body: dict) -> dict:
+    if "|DRIVE|" in body["series_id"]:
+        return _record_drive_decision(user, body)
     access = config.load_settings("access")
     action = body["action"]
     index = _series_index(body["series_id"])
@@ -290,8 +358,10 @@ def audit(user: User | None, event: str, **fields) -> None:
 
 def list_decisions(user: User, facility_id: str | None, action: str | None) -> dict:
     allowed = scope(user)
+    if user.role == "regional_officer":
+        allowed = allowed + [user.facility_id]            # their own centre's drive decisions
     if facility_id is not None:
-        allowed = [require_facility(user, facility_id)]
+        allowed = [facility_id if facility_id in allowed else require_facility(user, facility_id)]
     marks = ",".join("?" for _ in allowed)
     sql = f"SELECT * FROM decision WHERE facility_id IN ({marks})"
     params: list = list(allowed)
@@ -313,7 +383,7 @@ def list_decisions(user: User, facility_id: str | None, action: str | None) -> d
 
 def audit_entries(user: User, limit: int = 200) -> dict:
     """The raw audit trail for the user's hospitals (and their own sign-ins)."""
-    allowed = scope(user)
+    allowed = scope(user) + ([user.facility_id] if user.role == "regional_officer" else [])
     marks = ",".join("?" for _ in allowed)
     rows = read(f"SELECT * FROM audit_log WHERE facility_id IN ({marks}) OR (facility_id IS NULL AND user_id = ?) "
                 "ORDER BY audit_id DESC LIMIT ?", (*allowed, user.user_id, limit)).to_dict("records")

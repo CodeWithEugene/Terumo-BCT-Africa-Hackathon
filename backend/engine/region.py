@@ -1,0 +1,122 @@
+"""The regional centre's view: supply for the next four weeks, the gap against
+demand, and suggestions for extra drives. Everything is a suggestion; a person
+accepts, changes or rejects it."""
+from __future__ import annotations
+
+import math
+
+import numpy as np
+import pandas as pd
+
+from backend.engine import supply, words
+from backend.engine.projection import Snapshot
+
+VENUE_WORDS = {
+    "church": "churches", "mosque": "mosques", "corporate": "workplaces", "market_or_stage": "markets and bus stages",
+    "community_event": "community events", "fixed_site_walk_in": "the fixed walk-in site",
+    "secondary_school": "secondary schools", "university_college": "universities and colleges",
+}
+
+
+def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None = None) -> dict:
+    world = snap.world
+    hist = supply.history(world)
+    made = supply.forecast(world, snap.as_of, extra_drives=extra_drives)
+    c = hist.centres.index(centre)
+    weeks = made.weeks
+    starts = [snap.as_of + pd.Timedelta(days=7 * k) for k in range(weeks)]
+    calendar = world.calendar.loc[centre]
+
+    # Regional demand for red cells per group and week. The demand forecast covers two weeks;
+    # weeks 3 and 4 use the average of those two (demand is nearly flat through the year).
+    series = world.panel.series
+    demand = np.zeros((len(hist.groups), weeks))
+    for g, group in enumerate(hist.groups):
+        cols = series.index[(series["region"] == centre) & (series["component"] == "RBC")
+                            & (series["blood_group"] == group)].to_numpy()
+        daily = snap.forecast.p50[:, cols].sum(axis=1)
+        week1, week2 = daily[:7].sum(), daily[7:14].sum()
+        demand[g] = [week1, week2, (week1 + week2) / 2, (week1 + week2) / 2][:weeks]
+
+    # A simple balance per group: what the centre holds, plus what it clears, minus what its hospitals need.
+    gap = np.zeros_like(demand)
+    stock_end = np.zeros_like(demand)
+    for g in range(len(hist.groups)):
+        stock = float(made.centre_stock_now[c, g])
+        for k in range(weeks):
+            available = stock + made.cleared[c, g, k]
+            gap[g, k] = max(0.0, demand[g, k] - available)
+            stock = max(0.0, available - demand[g, k]) * (1 - float(made.loss_rate[c, g]))
+            stock_end[g, k] = stock
+
+    schedule = made.scheduled_drives[made.scheduled_drives["centre"] == centre]
+    week_rows = []
+    for k, start in enumerate(starts):
+        end = start + pd.Timedelta(days=6)
+        drives = schedule[(schedule["date"] >= start) & (schedule["date"] <= end)]
+        in_break = bool((calendar.loc[start:end, "school_in_session"] == 0).mean() >= 0.5)
+        week_rows.append({
+            "week": k + 1, "start": str(start.date()), "label": f"{words.day(start)} to {words.day(end)}",
+            "short_label": f"Week of {start.day} {start:%b}", "school_break": in_break,
+            "expected_cleared": round(float(made.cleared[c, :, k].sum()), 0),
+            "usual_cleared": round(float(made.cleared_recent[c].sum()), 0),
+            "demand": round(float(demand[:, k].sum()), 0),
+            "units_short": round(float(gap[:, k].sum()), 0),
+            "scheduled_drives": int(len(drives)),
+            "expected_donors": round(float(drives["expected_collected"].sum()), 0),
+        })
+
+    groups = [{
+        "blood_group": group, "blood_group_label": words.group_symbol(group),
+        "stock_now": int(made.centre_stock_now[c, g]),
+        "weeks": [{"week": k + 1, "demand": round(float(demand[g, k]), 1), "cleared": round(float(made.cleared[c, g, k]), 1),
+                   "short": round(float(gap[g, k]), 1), "stock_end": round(float(stock_end[g, k]), 1)} for k in range(weeks)],
+    } for g, group in enumerate(hist.groups)]
+
+    per_donation = float(made.rates["units_per_donation"].get(centre, 0.0))
+    suggestions = []
+    for k in range(1, weeks):                                    # 2 to 4 weeks out: time to organise a drive
+        short = float(gap[:, k].sum())
+        if short < 1 or per_donation <= 0:
+            continue
+        row = week_rows[k]
+        table = made.rates["venue_yield_in_breaks" if row["school_break"] else "venue_yield_in_term"]
+        venues = sorted([v for v in table if v["count"] >= 5 and v["venue_type"] in VENUE_WORDS],
+                        key=lambda v: -v["mean"])[:3]
+        donors = math.ceil(short / per_donation)
+        worst = sorted(((gap[g, k], hist.groups[g]) for g in range(len(hist.groups)) if gap[g, k] >= 0.5), reverse=True)[:3]
+        when = "during school breaks" if row["school_break"] else "in term time"
+        venue_text = ", ".join(f"{VENUE_WORDS[v['venue_type']]} ({v['mean']:.0f} a drive)" for v in venues)
+        suggestions.append({
+            "id": f"{centre}|DRIVE|{row['start']}", "as_of": str(snap.as_of.date()), "week": k + 1,
+            "week_label": row["label"], "school_break": row["school_break"],
+            "groups_short": [words.group_symbol(g) for _, g in worst],
+            "text": f"About {words.units(round(short))} of red cells short in the week of {row['label']}"
+                    + (f", mostly {', '.join(words.group_words(g) for _, g in worst)}." if worst else "."),
+            "venue_text": f"Venues that have yielded most {when}: {venue_text}." if venues else "",
+            "venues": [{"venue_type": v["venue_type"], "label": VENUE_WORDS[v["venue_type"]],
+                        "per_drive": round(v["mean"], 0)} for v in venues],
+            "suggestion": {
+                "kind": "drive", "title": f"Add collections in the week of {row['label']}",
+                "needs_approval": "This is a suggestion for the drive planner. Nothing is booked and no donor is contacted.",
+                "quantity": donors, "usual_quantity": 0, "unit_word": "donors",
+                "for_date": row["start"], "for_label": row["short_label"],
+                "parts": [{"label": "Usable red cell units short that week", "units": round(short, 0)}],
+                "sum_text": f"{round(short)} units ÷ {per_donation:.2f} usable units per donation = {donors} donors",
+            },
+        })
+
+    total_expected, total_usual = sum(w["expected_cleared"] for w in week_rows), sum(w["usual_cleared"] for w in week_rows)
+    change = round(100 * (total_expected / total_usual - 1)) if total_usual else 0
+    return {
+        "centre": {"facility_id": centre, "name": world.facility.at[centre, "name"],
+                   "region_name": world.facility.at[centre, "region_name"]},
+        "weeks": week_rows, "groups": groups, "drive_suggestions": suggestions,
+        "supply_change_pct": change,
+        "rates": {"units_per_donation": round(per_donation, 2),
+                  "median_testing_wait_days": made.rates["median_testing_wait_days"]},
+        "what_if": extra_drives or [],
+        "notes": ["Scheduled drives are taken as known for the next 4 weeks. Emergency appeals are never counted.",
+                  "Demand for weeks 3 and 4 is the average of weeks 1 and 2.",
+                  "The balance counts the centre's own stock and what it clears, not what is already on hospital shelves."],
+    }
