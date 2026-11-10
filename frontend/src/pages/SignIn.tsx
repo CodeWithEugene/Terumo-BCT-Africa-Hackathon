@@ -5,9 +5,9 @@ import { Button } from '../components/States'
 import { TubesBackdrop } from '../components/Tubes'
 import { t } from '../i18n/en'
 import { api, ApiError } from '../lib/api'
-import type { DemoUser, User } from '../types'
+import type { DemoUser, ModeInfo, User } from '../types'
 
-export function SignIn({ onSignedIn }: { onSignedIn: (user: User) => void }) {
+export function SignIn({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo) => void }) {
   const [accounts, setAccounts] = useState<DemoUser[] | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
@@ -29,8 +29,8 @@ export function SignIn({ onSignedIn }: { onSignedIn: (user: User) => void }) {
     setBusy(username)
     setProblem(null)
     try {
-      const reply = await api.post<{ user: User }>('/api/login', { username, password: secret })
-      onSignedIn(reply.user)
+      const reply = await api.post<{ user: User } & ModeInfo>('/api/login', { username, password: secret })
+      onSignedIn(reply.user, reply)
     } catch (e) {
       const error = e as ApiError
       setProblem(error.status === 401 ? t.signIn.wrong : error.status === 503 ? t.signIn.notBuilt : t.signIn.unreachable)

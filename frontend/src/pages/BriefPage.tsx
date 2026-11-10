@@ -21,6 +21,7 @@ export function BriefPage({
   onMode,
   selectedId,
   refreshKey,
+  compact = false,
 }: {
   asOf: string
   facilityId: string
@@ -29,9 +30,11 @@ export function BriefPage({
   onMode: (m: ModeInfo) => void
   selectedId?: string
   refreshKey: number
+  compact?: boolean
 }) {
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const grid = cx('grid gap-3 md:grid-cols-2', compact ? 'xl:grid-cols-2' : 'xl:grid-cols-4')
 
   const fetchBrief = useCallback(() => {
     const path = `/api/brief?as_of=${asOf}&facility_id=${facilityId}&component=${component}`
@@ -101,7 +104,7 @@ export function BriefPage({
           )}
           {brief && (
             <div className={cx('transition-opacity duration-150', stale && 'opacity-50')} aria-live="polite">
-              <h1 className="mt-5 max-w-[24ch] text-[clamp(1.750rem,4.500vw,3.250rem)] leading-[1.100]">
+              <h1 className={cx('mt-5 max-w-[24ch] leading-[1.100]', compact ? 'text-[clamp(1.750rem,4.500vw,2.250rem)]' : 'text-[clamp(1.750rem,4.500vw,3.250rem)]')}>
                 <span className="font-normal text-body">{t.brief.greeting(new Date().getHours())}</span> {brief.sentence}
               </h1>
               <p className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
@@ -146,7 +149,7 @@ export function BriefPage({
 
         <div className="mt-4">
           {load.state === 'loading' && (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className={grid}>
               {Array.from({ length: 8 }, (_, i) => (
                 <TileSkeleton key={i} />
               ))}
@@ -188,7 +191,7 @@ export function BriefPage({
                   <QuietState title={t.brief.allSteadyTitle} text={t.brief.allSteadyText} />
                 </div>
               )}
-              <div className={cx('grid gap-3 md:grid-cols-2 xl:grid-cols-4', stale && 'opacity-50')}>
+              <div className={cx(grid, stale && 'opacity-50')}>
                 {brief.series.map((s, i) => (
                   <Tile key={s.id} series={s} index={i} selected={selectedId === s.id} />
                 ))}

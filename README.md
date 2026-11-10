@@ -32,10 +32,14 @@ they supply.
   - A sign-in screen with three one-tap test accounts and the morning brief: one plain sentence, then the eight
     blood groups with days of cover, a cover bar and a status. It keeps the last brief in the browser and
     shows it with a banner if the server cannot be reached. It works at 360, 768 and 1280 pixels wide.
+  - A detail view per blood group: the 14-day projection with its range, delivery markers and the point where
+    stock runs out, the reasons, compatible stock (information only), and the suggestion with its sum.
+    Accept, Change or Reject; Change and Reject need a reason. A 10-second undo. A Decisions page lists the log.
+    A switch shows what really happened next, which the forecast never sees.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The interface has sign-in and the morning brief so far. Detail, decisions, accuracy, regional and
-    privacy screens are still to come.
+  - The accuracy, regional and privacy screens are still to come.
+  - The "View as FHIR" link on an accepted order comes with the standards step.
   - The trained forecast model (Step 7) is not built yet, so the app currently runs in fallback mode.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.

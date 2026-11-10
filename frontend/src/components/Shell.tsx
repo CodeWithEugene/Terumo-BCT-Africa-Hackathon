@@ -61,6 +61,7 @@ export function Shell({
   onFacility,
   onSignOut,
   extra,
+  panelOpen = false,
   children,
 }: {
   user: User
@@ -73,6 +74,7 @@ export function Shell({
   onFacility: (id: string) => void
   onSignOut: () => void
   extra?: ReactNode
+  panelOpen?: boolean
   children: ReactNode
 }) {
   const items = navItems(user)
@@ -82,7 +84,7 @@ export function Shell({
     'min-h-11 w-full max-w-full rounded-control border border-ink/20 bg-white px-3 pr-8 text-sm font-medium text-ink md:w-auto'
 
   return (
-    <div className="min-h-dvh md:pl-16 xl:pl-52">
+    <div className={cx('min-h-dvh md:pl-16 xl:pl-52', panelOpen && 'xl:pr-[min(34rem,46vw)]')}>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-control focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
