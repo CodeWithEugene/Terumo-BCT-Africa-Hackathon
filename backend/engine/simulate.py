@@ -73,3 +73,33 @@ def cumulative_range(p10: np.ndarray, p50: np.ndarray, p90: np.ndarray) -> tuple
     low = np.clip(centre - np.sqrt(np.cumsum((p50 - p10) ** 2)), 0, None)
     low = np.maximum.accumulate(low)
     return np.diff(low, prepend=0.0), np.diff(high, prepend=0.0)
+
+
+def stockout_probability(shelf: float, arrivals: np.ndarray, expired: np.ndarray, p50: np.ndarray, p90: np.ndarray,
+                         days: list[int], draws: int = 400, seed: int = 0) -> dict[int, float]:
+    """Chance that demand outruns the shelf within each of `days` (counted from today).
+
+    Daily demand is drawn as counts: Poisson around the forecast, widened to a
+    gamma-Poisson mix where the forecast range says demand is burstier than
+    Poisson. A path "runs out" on the first day its running demand exceeds the
+    units available (shelf plus deliveries so far, minus units expired so far).
+    """
+    rng = np.random.default_rng(seed)
+    mean = np.clip(np.asarray(p50, dtype=float), 0, None)
+    spread = np.clip((np.asarray(p90, dtype=float) - mean) / 1.2816, 0, None) ** 2
+    variance = np.maximum(mean, spread)
+    rate = np.tile(mean, (draws, 1))
+    wide = variance > mean + 1e-9
+    if wide.any():
+        shape = np.where(wide, mean ** 2 / np.where(wide, variance - mean, 1.0), 1.0)
+        scale = np.where(wide, (variance - mean) / np.where(mean > 0, mean, 1.0), 0.0)
+        gamma = rng.gamma(np.where(shape > 0, shape, 1.0), np.where(scale > 0, scale, 1.0), size=(draws, len(mean)))
+        rate = np.where(wide & (mean > 0), gamma, rate)
+    demand = rng.poisson(rate)
+    available = shelf + np.cumsum(arrivals) - np.concatenate([[0.0], np.cumsum(expired)[:-1]])
+    short = np.cumsum(demand, axis=1) > available + 1e-9
+    out = {}
+    for n in days:
+        n = max(1, min(int(n), len(mean)))
+        out[n] = float(short[:, :n].any(axis=1).mean())
+    return out

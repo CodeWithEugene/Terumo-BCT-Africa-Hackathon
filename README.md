@@ -50,6 +50,14 @@ they supply.
     settings the server enforces), where data is stored, cookies, what to do if something leaks, a data-flow
     diagram, and a privacy notice in English and Swahili.
   - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
+  - **Two risks side by side.** Each blood group shows the chance of running out (from 400 simulated demand
+    paths) next to the units likely to expire unused, and how many units on the shelf are usable before expiry.
+  - **What-if on any blood group:** a mass-casualty surge or a late delivery redraws the chart and the risks.
+    On the regional view, add or cancel a drive. Nothing is saved.
+  - **Platelet apheresis hint** and a **draft donor call-out** on the regional view. The draft is never sent.
+  - **Alert scorecard** on the Accuracy page: shortages warned of, missed, false alarms, lead time, and a check
+    of whether the stated chance of running out is honest. The demand backtest also reports a cost where a
+    unit short counts five times a unit left over.
   - **Fair-share allocation.** On 61% of the days a hospital ran short of a blood group, other hospitals in
     its region held spare units of it. The regional view proposes how to share each week's units by days of
     cover, and a replay of the test period compares that with what really happened (see AI and data).
@@ -217,6 +225,18 @@ Data lead: to confirm (one named person from the table above).
 ## Known limits and next steps
 - **Accuracy:** most warnings are still false alarms (about 28% are followed by a real shortage), and the
   median warning comes 1 to 2 days ahead. The demand model beats the 4-week average only slightly.
+- **Where fair share sits in the literature.** Sharing stock before a shortage is called proactive lateral
+  transshipment; days of cover is the Issuable Stock Index (ISI); our replay is a trace-driven simulation.
+  A precedent for moving stock between hospitals is South Australia's BloodMove programme, which rotated
+  near-expiry red cells to higher-use laboratories and is reported to have cut avoidable wastage from 15% to under
+  1% by January 2013 (secondary source: https://bloodmove.com/australian-bloodmove-project). That programme moves
+  blood after it is near expiry; ours proposes the split before delivery. We have not verified other precedents.
+- **Protected minimum.** In the live proposal the national referral hospital is first brought up to 7 days of
+  cover (`config/thresholds.yaml`). The replay never uses this, so its reported result is not tuned; with the
+  minimum on, the gain for other hospitals will be smaller.
+- **The stated chance of running out is too high in the middle.** When the tool said about 33%, 10% really ran
+  short; at about 64%, 26% did. It is close at the ends (3% given, 4% happened; 91% given, 76% happened). Read it
+  as a ranking of risk, not an exact probability, until it is recalibrated on real data.
 - **Fair share is a replay, not a trial.** It assumes units can be re-split within a delivery day, ignores
   vehicle capacity, and has no protected minimum for referral hospitals. It is a proposal a person approves.
 - **Synthetic data:** every number describes the model dataset, not real hospitals. The approach needs testing
@@ -225,7 +245,9 @@ Data lead: to confirm (one named person from the table above).
   the data live almost entirely on emergency deliveries.
 - **Units exposed to a warm fridge** cannot be dated from the data, so they are not removed from projected stock.
 - **Calendar:** school terms, public holidays and malaria months are approximate settings to confirm.
-- **Platelets** are not held at hospitals in this dataset, so they have a demand forecast but no shelf projection.
+- **Platelets** last 5 days and are supplied to order, so hospitals do not hold a platelet shelf. They have a demand
+  forecast and an apheresis booking hint, but no shelf projection. The hint rests on an assumption (one apheresis
+  donation gives about 6 whole-blood-derived units) that is a setting, not a fact from the dataset.
 - **Privacy and compliance, before real use:** a data protection impact assessment (DPIA), registration with the
   Office of the Data Protection Commissioner (ODPC), processor agreements with any hosting company, a decision
   on the hosting region, and small-count suppression outside the hospital.

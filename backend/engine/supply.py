@@ -166,6 +166,7 @@ def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, we
         counted = pd.concat([counted, pd.DataFrame([{
             "date": pd.Timestamp(extra["date"]), "centre": extra["centre"], "collecting_site_id": extra["centre"],
             "venue_type": "what_if", "expected_collected": float(extra["donors"]), "known": False}])], ignore_index=True)
+    # A cancelled drive is a what-if with negative donors; supply can never go below zero.
 
     out = np.zeros((len(hist.centres), len(hist.groups), weeks))
     centre_index = {c: i for i, c in enumerate(hist.centres)}
@@ -179,6 +180,7 @@ def expected_clearing(world: World, hist: SupplyHistory, as_of: pd.Timestamp, we
             day = (row.date + pd.Timedelta(days=int(wait)) - as_of).days
             if 0 <= day < 7 * weeks and share > 0:
                 out[centre_index[row.centre], :, day // 7] += units * share * shares
+    out = np.clip(out, 0, None)
     schedule = ahead[["date", "centre", "collecting_site_id", "venue_type", "expected_collected"]].copy()
     in_break = past.merge(world.calendar.reset_index()[["date", "school_in_session"]].drop_duplicates("date"), on="date")
     planned = in_break[~in_break["venue_type"].isin(settings["unplanned_venues"])]

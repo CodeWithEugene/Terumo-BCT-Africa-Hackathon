@@ -62,6 +62,7 @@ def collect(model: str, db_path: Path | None = None, origin_dates=None) -> pd.Da
                 "ours": view["status"] in ("act", "watch"), "ours_act": view["status"] == "act",
                 "ours_usual": series_view(plain, index, detail=False)["status"] in ("act", "watch"),
                 "simple": bool(average[index] > 0 and shelf / average[index] < rule_days),
+                "chance": view.get("stockout_chance_7_days", 0.0),
                 "event": len(hit_days) > 0,
                 "event_unmet_only": bool((unmet[:, index] > 0).any()),
                 "lead_days": int(hit_days[0]) if len(hit_days) else np.nan,
@@ -89,6 +90,13 @@ def score(flags: pd.DataFrame) -> pd.DataFrame:
 
     one("all", "all held series", flags)
     one("strict", "all held series", flags.assign(event=flags["event_unmet_only"]))
+    # Is the stated chance of running out honest? Group checks by the chance given, and count what happened.
+    bands = pd.cut(flags["chance"], [-0.01, 0.2, 0.5, 0.8, 1.0], labels=["under 20%", "20 to 50%", "50 to 80%", "over 80%"])
+    for band, part in flags.groupby(bands, observed=True):
+        rows.append({"model": flags["model"].iloc[0], "rule": "chance", "segment_type": "chance", "segment": str(band),
+                     "checks": len(part), "events": int(part["event"].sum()), "alerts": len(part), "hits": int(part["event"].sum()),
+                     "recall": float(part["chance"].mean()), "precision": float(part["event"].mean()),
+                     "median_lead_days": np.nan})
     for segment_type in ("component", "facility type"):
         for name, group in flags.groupby(segment_type):
             one(segment_type, name, group)
@@ -101,9 +109,9 @@ def run(model: str = "auto", db_path: Path | None = None, write_docs: bool = Tru
     name = metrics["model"].iloc[0]
     conn = sqlite3.connect(db_path or config.DB_PATH)
     try:
-        if conn.execute("SELECT 1 FROM sqlite_master WHERE name='alert_metric'").fetchone():
-            conn.execute("DELETE FROM alert_metric WHERE model = ?", (name,))
-        metrics.to_sql("alert_metric", conn, if_exists="append", index=False)
+        from backend.db.core import replace_model_rows
+
+        replace_model_rows(conn, "alert_metric", metrics, name)
         conn.commit()
     finally:
         conn.close()
@@ -147,11 +155,20 @@ def results_section(db_path: Path | None = None) -> list[str]:
             return "n/a"
         return f"{value * 100:.0f}%" if pct else f"{value:g}"
 
+    chance = metrics[(metrics["segment_type"] == "chance") & (metrics["model"] == names[-1])]
+    if len(chance):
+        lines += ["### Is the stated chance of running out honest?", "",
+                  f"Each alert states a chance of running out within 7 days (forecast: {names[-1]}). "
+                  "If it is honest, the share that really ran short should be close to the chance given.", "",
+                  "| chance given | checks | average chance given | really ran short |", "| --- | --- | --- | --- |"]
+        for row in chance.itertuples():
+            lines.append(f"| {row.segment} | {row.checks:,} | {row.recall * 100:.0f}% | {row.precision * 100:.0f}% |")
+        lines.append("")
     for segment_type, title in (("all", "All held series"),
                                 ("strict", "Stricter check: only requests that were not fully met"),
                                 ("component", "By component"), ("facility type", "By facility type")):
         rows = []
-        part = metrics[metrics["segment_type"] == segment_type]
+        part = metrics[(metrics["segment_type"] == segment_type) & (metrics["rule"] != "chance")]
         for segment, by_segment in part.groupby("segment", sort=False):
             for name in names:
                 for rule, label in RULES.items():

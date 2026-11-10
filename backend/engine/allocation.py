@@ -38,14 +38,29 @@ RED = ("RBC", "WB")
 POLICIES = {"actual": "As it happened", "fair": "Fair share"}
 
 
-def fair_share(units: int, shelf: np.ndarray, daily: np.ndarray, eligible: np.ndarray) -> np.ndarray:
-    """Split `units` whole units so the lowest days of cover is raised first."""
+def fair_share(units: int, shelf: np.ndarray, daily: np.ndarray, eligible: np.ndarray,
+               protected_days: np.ndarray | None = None) -> np.ndarray:
+    """Split `units` whole units so the lowest days of cover is raised first.
+
+    `protected_days` (optional, per hospital) is a staff-set minimum: those
+    hospitals are brought up to that many days of cover before anything is shared.
+    """
     give = np.zeros(len(shelf), dtype=int)
     can = eligible & (daily > 0)
     if units <= 0 or not can.any():
         return give
     cover = np.where(can, shelf / np.where(daily > 0, daily, 1.0), np.inf)
     step = np.where(can, 1.0 / np.where(daily > 0, daily, 1.0), 0.0)
+    units = int(units)
+    if protected_days is not None:
+        while units > 0:
+            below = can & (cover < protected_days)
+            if not below.any():
+                break
+            h = int(np.argmin(np.where(below, cover, np.inf)))
+            give[h] += 1
+            cover[h] += step[h]
+            units -= 1
     for _ in range(int(units)):
         h = int(np.argmin(cover))
         give[h] += 1
@@ -271,12 +286,19 @@ def propose(snap, centre: str, shipped_week: np.ndarray, usual: np.ndarray, hosp
     usual_units = usual[index]                                             # (hospitals, groups)
     shelf = np.zeros((len(mine), len(groups)))
     daily = np.zeros((len(mine), len(groups)))
+    settings = config.load_settings("thresholds")["allocation"]
+    kinds = set(settings.get("protected_facility_types", []))
+    floor_days = float(settings.get("protected_cover_days", 0) or 0)
+    protected = np.array([floor_days if world.facility.at[h, "facility_type"] in kinds else 0.0 for h in mine])
+    protected_names = [world.facility.at[h, "name"] for h in mine
+                       if floor_days > 0 and world.facility.at[h, "facility_type"] in kinds]
     for g, group in enumerate(groups):
         cols = [int(series.index[(series["facility_id"] == h) & (series["component"] == "RBC")
                                  & (series["blood_group"] == group)][0]) for h in mine]
         daily[:, g] = snap.forecast.p50[:7, cols].mean(axis=0)
         shelf[:, g] = [snap.shelf.get((h, "RBC", group), 0.0) for h in mine]
-        fair[:, g] = fair_share(int(round(float(shipped_week[g]))), shelf[:, g], daily[:, g], np.ones(len(mine), dtype=bool))
+        fair[:, g] = fair_share(int(round(float(shipped_week[g]))), shelf[:, g], daily[:, g],
+                                np.ones(len(mine), dtype=bool), protected)
     rows = []
     for i, h in enumerate(mine):
         use = float(daily[i].sum())
@@ -296,6 +318,7 @@ def propose(snap, centre: str, shipped_week: np.ndarray, usual: np.ndarray, hosp
     return {
         "id": f"{centre}|ALLOC|{snap.as_of.date()}", "as_of": str(snap.as_of.date()), "rows": rows,
         "total_units": total, "units_moved": moved,
+        "protected": {"days": floor_days, "hospitals": protected_names} if protected_names else None,
         "lowest_cover_usual": min(covers_usual) if covers_usual else None,
         "lowest_cover_fair": min(covers_fair) if covers_fair else None,
         "text": (f"About {words.units(total)} of red cells should leave the centre this week. Sharing them by days of cover "

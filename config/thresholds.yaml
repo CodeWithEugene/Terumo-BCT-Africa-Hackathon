@@ -58,3 +58,20 @@ allocation:
   demand_days: 28            # a hospital's need is its average daily requests over this many past days
   spare_cover_days: 7        # "spare" means units beyond this many days of a hospital's own use
   replay_first_day: 2026-07-06   # the replay covers the same period as the forecast tests
+  # Protected minimum: before units are shared out, these kinds of hospital are first brought up to
+  # this many days of cover. Used in the live proposal only. The replay in docs/RESULTS.md never
+  # uses it, so the reported result is not tuned. Set to 0 to switch it off.
+  protected_cover_days: 7
+  protected_facility_types: [national_referral]
+
+# --- Risk numbers shown beside each alert ---------------------------------------------
+risk:
+  simulations: 400               # demand paths drawn to estimate the chance of running out
+  waste_high_units: 2            # wastage risk is "high" at this many units expected to expire in 14 days
+  waste_watch_units: 1           # ... and "watch" at this many in a quiet spell
+  stockout_cost: 5               # in the backtest, a unit short costs this many times a unit left over
+  waste_cost: 1
+
+# --- Platelets by apheresis (an assumption, not in the dataset) -------------------------
+apheresis:
+  whole_blood_units_per_apheresis_donation: 6   # one apheresis donation is taken as about 6 whole-blood-derived units

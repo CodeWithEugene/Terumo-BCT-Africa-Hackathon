@@ -11,6 +11,10 @@ import pandas as pd
 from backend.engine import supply, words
 from backend.engine.projection import Snapshot
 
+def start_of(row: dict) -> str:
+    return row["short_label"].replace("Week of ", "")
+
+
 VENUE_WORDS = {
     "church": "churches", "mosque": "mosques", "corporate": "workplaces", "market_or_stage": "markets and bus stages",
     "community_event": "community events", "fixed_site_walk_in": "the fixed walk-in site",
@@ -94,6 +98,11 @@ def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None =
             "text": f"About {words.units(round(short))} of red cells short in the week of {row['label']}"
                     + (f", mostly {', '.join(words.group_words(g) for _, g in worst)}." if worst else "."),
             "venue_text": f"Venues that have yielded most {when}: {venue_text}." if venues else "",
+            # A draft only. No donor data is held and nothing is sent; a person must approve and send it.
+            "call_out_draft": (f"{world.facility.at[centre, 'region_name']} blood centre: we need "
+                               + (" and ".join(words.group_words(g) for _, g in worst[:2]) if worst else "all groups of")
+                               + f" blood in the week of {start_of(row)}. One donation can help up to three patients. "
+                               "Please come to your nearest drive. Reply STOP to opt out.")[:300],
             "venues": [{"venue_type": v["venue_type"], "label": VENUE_WORDS[v["venue_type"]],
                         "per_drive": round(v["mean"], 0)} for v in venues],
             "suggestion": {
@@ -109,12 +118,33 @@ def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None =
     from backend.engine import allocation as fair
     proposal = fair.propose(snap, centre, made.shipped[c, :, 0], made.received[:, :, 0], hist.hospitals, hist.groups)
 
+    # Platelets: turn the regional platelet forecast into apheresis donors to book (an assumption-based hint).
+    apheresis = None
+    if bool(world.facility.at[centre, "makes_platelets"]):
+        from backend import config as _config
+
+        per_donation = _config.load_settings("thresholds")["apheresis"]["whole_blood_units_per_apheresis_donation"]
+        cols = series.index[(series["region"] == centre) & (series["component"] == "PLT")].to_numpy()
+        daily_mid = snap.forecast.p50[:7, cols].sum(axis=1)
+        daily_busy = snap.forecast.p90[:7, cols].sum(axis=1)
+        apheresis = {
+            "units_per_donation": per_donation,
+            "week_units": round(float(daily_mid.sum()), 1), "week_units_busy": round(float(daily_busy.sum()), 1),
+            "days": [{"label": words.day(snap.dates[t]), "units": round(float(daily_mid[t]), 1),
+                      "donors": int(math.ceil(daily_mid[t] / per_donation - 1e-9)),
+                      "donors_busy": int(math.ceil(daily_busy[t] / per_donation - 1e-9))} for t in range(7)],
+            "week_donors": int(math.ceil(daily_mid.sum() / per_donation - 1e-9)),
+            "week_donors_busy": int(math.ceil(daily_busy.sum() / per_donation - 1e-9)),
+            "note": f"Assumption, not from the dataset: one apheresis donation gives about {per_donation} "
+                    "whole-blood-derived platelet units. Platelets last 5 days, so they are collected to order.",
+        }
+
     total_expected, total_usual = sum(w["expected_cleared"] for w in week_rows), sum(w["usual_cleared"] for w in week_rows)
     change = round(100 * (total_expected / total_usual - 1)) if total_usual else 0
     return {
         "centre": {"facility_id": centre, "name": world.facility.at[centre, "name"],
                    "region_name": world.facility.at[centre, "region_name"]},
-        "weeks": week_rows, "groups": groups, "drive_suggestions": suggestions, "allocation": proposal,
+        "weeks": week_rows, "groups": groups, "drive_suggestions": suggestions, "allocation": proposal, "apheresis": apheresis,
         "supply_change_pct": change,
         "rates": {"units_per_donation": round(per_donation, 2),
                   "median_testing_wait_days": made.rates["median_testing_wait_days"]},

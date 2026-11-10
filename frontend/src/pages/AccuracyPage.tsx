@@ -6,8 +6,8 @@ import { api, ApiError, getWithCache } from '../lib/api'
 import { cx } from '../lib/format'
 import type { ModeInfo } from '../types'
 
-interface ForecastMetric { model: string; segment_type: string; segment: string; units_requested: number; mae: number; wape: number; wape_7day: number }
-interface AlertMetric { model: string; rule: string; segment_type: string; events: number; alerts: number; recall: number; precision: number }
+interface ForecastMetric { model: string; segment_type: string; segment: string; units_requested: number; mae: number; wape: number; wape_7day: number; asymmetric_cost?: number }
+interface AlertMetric { model: string; rule: string; segment_type: string; segment: string; checks: number; events: number; alerts: number; hits: number; recall: number; precision: number; median_lead_days: number | null }
 interface SupplyMetric { target: string; segment: string; method: string; wape: number; mae: number }
 interface Accuracy extends ModeInfo {
   forecast: ForecastMetric[]
@@ -105,6 +105,7 @@ export function AccuracyPage({ onMode }: { onMode: (m: ModeInfo) => void }) {
   const supply = (method: string) => data.supply.find((m) => m.target === 'cleared' && m.segment === 'all weeks ahead' && m.method === method)
   const hasModel = data.forecast.some((m) => m.model === 'm1')
   const ours = data.alerts.find((m) => m.rule === 'ours' && m.segment_type === 'all' && m.model === (hasModel ? 'm1' : 'baseline'))
+  const chance = data.alerts.filter((m) => m.segment_type === 'chance' && m.model === (hasModel ? 'm1' : 'baseline'))
   const simple = data.alerts.find((m) => m.rule === 'simple' && m.segment_type === 'all')
   const types = data.forecast.filter((m) => m.segment_type === 'facility type' && m.model === 'baseline')
   const typeOurs = (segment: string) => data.forecast.find((m) => m.segment_type === 'facility type' && m.model === 'm1' && m.segment === segment)
@@ -128,10 +129,55 @@ export function AccuracyPage({ onMode }: { onMode: (m: ModeInfo) => void }) {
         usualText={t.accuracy.supplyUsual} oursText={t.accuracy.supplyOurs} />
       <Compare label={t.accuracy.demandLabel} unit={t.accuracy.demandUnit} usual={all('baseline')?.wape_7day} ours={all('m1')?.wape_7day}
         usualText={t.accuracy.demandUsual} oursText={t.accuracy.demandOurs} />
+      {all('baseline')?.asymmetric_cost !== undefined && all('m1')?.asymmetric_cost !== undefined && (
+        <p className="mt-3 max-w-[76ch] text-sm">{t.accuracy.costLine(all('baseline')!.asymmetric_cost!.toFixed(2), all('m1')!.asymmetric_cost!.toFixed(2))}</p>
+      )}
       <Compare label={t.accuracy.alertLabel} unit={t.accuracy.alertUnit} suffix="%" higherIsBetter usual={simple?.recall} ours={ours?.recall}
         usualText={`${t.accuracy.alertUsual(data.alert_rule_cover_days ?? 3)} ${t.accuracy.alertUsualPrecision(`${pct(simple?.precision)}%`)}`}
         oursText={t.accuracy.alertOurs(`${pct(ours?.precision)}%`)} />
       <p className="mt-3 text-[0.8125rem] text-muted">{t.accuracy.shortage}</p>
+
+      {ours && (
+        <section className="mt-8">
+          <SectionLabel>{t.accuracy.scoreLabel}</SectionLabel>
+          <dl className="mt-3 grid grid-cols-2 gap-x-6 md:grid-cols-4">
+            {[
+              [t.accuracy.score.hits, ours.hits],
+              [t.accuracy.score.missed, ours.events - ours.hits],
+              [t.accuracy.score.false, ours.alerts - ours.hits],
+              [t.accuracy.score.lead, ours.median_lead_days ?? '–'],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="border-t border-line py-3">
+                <dt className="text-[0.8125rem] text-muted">{label}</dt>
+                <dd className="mt-0.5 text-[1.75rem] leading-tight font-medium text-ink">{typeof value === 'number' ? value.toLocaleString('en-GB') : value}</dd>
+              </div>
+            ))}
+          </dl>
+          {chance.length > 0 && (
+            <>
+              <p className="mt-4 text-sm font-medium text-ink">{t.accuracy.chanceLabel}</p>
+              <p className="mt-1 max-w-[76ch] text-sm">{t.accuracy.chanceLead}</p>
+              <div className="mt-3 overflow-x-auto rounded-card border border-line">
+                <table className="w-full min-w-[20rem] text-left text-sm">
+                  <thead className="bg-bg-alt text-[0.8125rem] text-ink">
+                    <tr>{Object.values(t.accuracy.chanceCols).map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {chance.map((c) => (
+                      <tr key={c.segment} className="border-t border-line">
+                        <td className="px-4 py-2 text-ink">{c.segment}</td>
+                        <td className="px-4 py-2">{c.checks.toLocaleString('en-GB')}</td>
+                        <td className="px-4 py-2">{pct(c.recall)}%</td>
+                        <td className="px-4 py-2 font-medium text-ink">{pct(c.precision)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {fairAll && (
         <>

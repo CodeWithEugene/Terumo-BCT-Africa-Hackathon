@@ -39,21 +39,25 @@ export function DetailPanel({
   const [load, setLoad] = useState<Load>({ state: 'loading' })
   const [table, setTable] = useState(false)
   const [actual, setActual] = useState(false)
+  const [delay, setDelay] = useState(0)
+  const [surge, setSurge] = useState(0)
 
   useEffect(() => {
     let live = true
     setLoad((prev) => (prev.state === 'ready' && prev.series.id === id ? prev : { state: 'loading' }))
-    getWithCache<{ series: Series } & ModeInfo>(`/api/series/${encodeURIComponent(id)}?as_of=${asOf}`)
+    getWithCache<{ series: Series } & ModeInfo>(`/api/series/${encodeURIComponent(id)}?as_of=${asOf}${delay ? `&delay_days=${delay}` : ''}${surge ? `&surge_units=${surge}` : ''}`)
       .then(({ data, cachedAt }) => live && setLoad({ state: 'ready', series: data.series, cachedAt }))
       .catch((e: Error) => live && setLoad({ state: 'error', message: e.message }))
     return () => {
       live = false
     }
-  }, [id, asOf, refreshKey])
+  }, [id, asOf, refreshKey, delay, surge])
 
   useEffect(() => {
     setActual(false)
     setTable(false)
+    setDelay(0)
+    setSurge(0)
   }, [id, asOf])
 
   useEffect(() => {
@@ -142,6 +146,61 @@ export function DetailPanel({
             />
           </dl>
 
+          <p className="mt-1 text-[0.8125rem] text-body">{t.detail.usable(s.usable_units ?? s.units_on_shelf, s.units_on_shelf)}</p>
+
+          <section className="mt-6">
+            <SectionLabel>{t.detail.risksLabel}</SectionLabel>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-card border border-line p-4">
+                <p className="flex items-center justify-between gap-2 text-sm font-medium text-ink">
+                  <span className="inline-flex items-center gap-2"><Icon name="trend" size={18} />{t.detail.shortRisk}</span>
+                  <StatusBadge status={s.status} />
+                </p>
+                <p className="mt-2 text-[2rem] leading-none font-medium text-ink">{Math.round((s.stockout_chance_7_days ?? 0) * 100)}%</p>
+                <p className="mt-2 text-sm">
+                  {t.detail.shortRiskText(Math.round((s.stockout_chance_before_delivery ?? 0) * 100), s.next_delivery?.label ?? null, Math.round((s.stockout_chance_7_days ?? 0) * 100))}
+                </p>
+              </div>
+              <div className="rounded-card border border-line p-4">
+                <p className="flex items-center justify-between gap-2 text-sm font-medium text-ink">
+                  <span className="inline-flex items-center gap-2"><Icon name="expiry" size={18} />{t.detail.wasteRisk}</span>
+                  <span className={s.waste_level === 'high' ? 'text-act' : s.waste_level === 'watch' ? 'text-watch' : 'text-steady'}>
+                    {t.detail.riskLevel[s.waste_level ?? 'none']}
+                  </span>
+                </p>
+                <p className="mt-2 text-[2rem] leading-none font-medium text-ink">
+                  {Math.round(s.waste_units_14_days ?? 0)} <span className="text-base font-normal text-body">{Math.round(s.waste_units_14_days ?? 0) === 1 ? 'unit' : 'units'}</span>
+                </p>
+                <p className="mt-2 text-sm">{t.detail.wasteRiskText(Math.round(s.waste_units_14_days ?? 0), Math.round(s.waste_units_if_quiet ?? 0), s.waste_from ?? null)}</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <SectionLabel>{t.detail.whatIfLabel}</SectionLabel>
+            <div className="mt-3 rounded-card border border-line p-4">
+              <p className="text-sm">{t.detail.whatIfHelp}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => setSurge(12)} aria-pressed={surge === 12}>{t.detail.whatIfPresets.casualty}</Button>
+                <Button variant="outline" onClick={() => setDelay(3)} aria-pressed={delay === 3}>{t.detail.whatIfPresets.delay}</Button>
+                {(delay > 0 || surge > 0) && <Button variant="text" onClick={() => { setDelay(0); setSurge(0) }}>{t.detail.whatIfPresets.clear}</Button>}
+              </div>
+              <div className="mt-3 flex flex-wrap items-end gap-4">
+                <label className="grid gap-1 text-sm font-medium text-ink">
+                  {t.detail.whatIfDelay}
+                  <select className="min-h-11 rounded-control border border-ink/25 bg-white px-3 font-normal" value={delay} onChange={(e) => setDelay(Number(e.target.value))}>
+                    {[0, 1, 2, 3, 5, 7].map((n) => <option key={n} value={n}>{t.detail.whatIfDays(n)}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-sm font-medium text-ink">
+                  {t.detail.whatIfSurge}
+                  <input type="number" min={0} max={200} inputMode="numeric" className="min-h-11 w-28 rounded-control border border-ink/25 px-3 font-normal" value={surge} onChange={(e) => setSurge(Math.max(0, Math.min(200, Number(e.target.value) || 0)))} />
+                </label>
+              </div>
+              {s.scenario && <p className="mt-3 rounded-control bg-watch-soft px-3 py-2 text-sm text-watch" role="status">{t.detail.whatIfOn}</p>}
+            </div>
+          </section>
+
           <section className="mt-6">
             <SectionLabel>{t.detail.chartTitle}</SectionLabel>
             <div className="mt-3">
@@ -214,7 +273,11 @@ export function DetailPanel({
           <section className="mt-6">
             <SectionLabel>{t.detail.suggestion}</SectionLabel>
             <div className="mt-3">
-              <DecisionBar series={s} asOf={asOf} codes={codes} onDecided={onDecided} />
+              {s.scenario ? (
+                <p className="text-sm text-muted">{t.detail.whatIfOn}</p>
+              ) : (
+                <DecisionBar series={s} asOf={asOf} codes={codes} onDecided={onDecided} />
+              )}
             </div>
           </section>
 

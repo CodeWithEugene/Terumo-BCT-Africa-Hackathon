@@ -177,12 +177,13 @@ def what_happened(snap: Snapshot, index: int) -> dict:
             "summary": text, "days": days}
 
 
-def series_detail(user: User, series_id: str, as_of: str | None) -> dict:
+def series_detail(user: User, series_id: str, as_of: str | None, delay_days: int = 0, surge_units: int = 0) -> dict:
     index = _series_index(series_id)
     facility_id = get_world().panel.series.at[index, "facility_id"]
     require_facility(user, facility_id)
     snap = snapshot(as_of)
-    view = series_view(snap, index, detail=True)
+    scenario = {"delay_days": delay_days, "surge_units": surge_units} if (delay_days or surge_units) else None
+    view = series_view(snap, index, detail=True, scenario=scenario)
     view["decision"] = _decisions_for(str(snap.as_of.date()), facility_id).get(series_id)
     view["actual"] = what_happened(snap, index)
     view["forecast_compare"] = _both_forecasts(snap, index)
@@ -211,7 +212,7 @@ def region(user: User, as_of: str | None, extra_donors: int | None = None, extra
     extra = None
     if extra_donors and extra_date:
         date = pd.Timestamp(extra_date)
-        if not (snap.as_of <= date < snap.as_of + pd.Timedelta(days=28)) or not (1 <= extra_donors <= 2000):
+        if not (snap.as_of <= date < snap.as_of + pd.Timedelta(days=28)) or not (1 <= abs(extra_donors) <= 2000):
             raise HTTPException(status_code=422, detail="Choose a date in the next 4 weeks and 1 to 2,000 donors.")
         extra = [{"date": str(date.date()), "centre": user.facility_id, "donors": int(extra_donors)}]
     view = regional_view(snap, user.facility_id, extra)

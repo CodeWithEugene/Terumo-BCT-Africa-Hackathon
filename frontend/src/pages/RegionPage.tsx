@@ -34,6 +34,7 @@ export function RegionPage({
   const [donors, setDonors] = useState(60)
   const [date, setDate] = useState('')
   const [whatIf, setWhatIf] = useState<{ donors: number; date: string } | null>(null)
+  const [cancel, setCancel] = useState(false)
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
@@ -157,7 +158,7 @@ export function RegionPage({
           {whatIf && (
             <div className="mt-8">
               <Banner icon="info" action={<Button variant="outline" onClick={() => setWhatIf(null)}>{t.region.clear}</Button>}>
-                {t.region.whatIfOn(whatIf.donors, whatIf.date)}
+                {whatIf.donors < 0 ? `Showing a what-if: a drive of ${-whatIf.donors} donors on ${whatIf.date} is cancelled. Not saved.` : t.region.whatIfOn(whatIf.donors, whatIf.date)}
               </Banner>
             </div>
           )}
@@ -268,6 +269,11 @@ export function RegionPage({
                 </div>
               ))}
             </div>
+            {view.allocation.protected && (
+              <p className="mt-3 max-w-[76ch] text-[0.8125rem] text-body">
+                {t.region.protectedNote(view.allocation.protected.days, view.allocation.protected.hospitals.join(', '))}
+              </p>
+            )}
             <div className="mt-4 rounded-card border border-line p-4 sm:p-5">
               {view.allocation.units_moved <= 0 ? (
                 <p className="text-sm">{t.region.fairNone}</p>
@@ -293,6 +299,13 @@ export function RegionPage({
                       {item.venue_text}
                     </p>
                   )}
+                  {item.call_out_draft && (
+                    <details className="mt-3 rounded-control border border-line px-3 py-2 text-sm">
+                      <summary className="cursor-pointer font-medium text-ink">{t.region.callOut}</summary>
+                      <p className="mt-2 rounded-[14px] rounded-bl-sm bg-bg-alt px-4 py-3 leading-relaxed text-ink">{item.call_out_draft}</p>
+                      <p className="mt-2 text-[0.8125rem] text-muted">{t.region.callOutNote}</p>
+                    </details>
+                  )}
                   <div className="mt-4 border-t border-line pt-4">
                     {whatIf ? (
                       <p className="text-sm text-muted">{t.region.clear} the what-if to decide on this suggestion.</p>
@@ -305,6 +318,36 @@ export function RegionPage({
             </div>
           </section>
 
+          {/* Platelets: apheresis hint */}
+          {view.apheresis && (
+            <section className="mt-10">
+              <SectionLabel>{t.region.apheresisLabel}</SectionLabel>
+              <p className="mt-3 max-w-[76ch] text-sm">
+                {t.region.apheresisLead(view.apheresis.week_units, view.apheresis.week_units_busy, view.apheresis.week_donors, view.apheresis.week_donors_busy)}
+              </p>
+              <div className="mt-3 overflow-x-auto rounded-card border border-line">
+                <table className="w-full min-w-[20rem] text-left text-sm">
+                  <thead className="bg-bg-alt text-[0.8125rem] text-ink">
+                    <tr>
+                      {Object.values(t.region.apheresisCols).map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {view.apheresis.days.map((d) => (
+                      <tr key={d.label} className="border-t border-line">
+                        <td className="px-4 py-2 whitespace-nowrap text-ink">{d.label}</td>
+                        <td className="px-4 py-2">{d.units}</td>
+                        <td className="px-4 py-2 font-medium text-ink">{d.donors}</td>
+                        <td className="px-4 py-2">{d.donors_busy}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 max-w-[76ch] text-[0.8125rem] text-muted">{view.apheresis.note}</p>
+            </section>
+          )}
+
           {/* What-if */}
           <section className="mt-10">
             <SectionLabel>{t.region.whatIfLabel}</SectionLabel>
@@ -312,7 +355,7 @@ export function RegionPage({
               className="mt-3 flex flex-wrap items-end gap-3 rounded-card border border-line p-4 sm:p-5"
               onSubmit={(e) => {
                 e.preventDefault()
-                if (date && donors > 0) setWhatIf({ donors, date })
+                if (date && donors > 0) setWhatIf({ donors: cancel ? -donors : donors, date })
               }}
             >
               <p className="basis-full text-sm">{t.region.whatIfHelp}</p>
@@ -323,6 +366,10 @@ export function RegionPage({
               <label className="grid gap-1 text-sm font-medium text-ink">
                 {t.region.date}
                 <input type="date" required min={view.as_of} max={lastDay} className="min-h-11 rounded-control border border-ink/25 px-3 font-normal" value={date} onChange={(e) => setDate(e.target.value)} />
+              </label>
+              <label className="flex min-h-11 items-center gap-2 text-sm text-ink">
+                <input type="checkbox" className="h-4 w-4 accent-[#141b4d]" checked={cancel} onChange={(e) => setCancel(e.target.checked)} />
+                {t.region.cancelDrive}
               </label>
               <Button type="submit" variant="sky" icon="arrow">
                 {t.region.tryIt}

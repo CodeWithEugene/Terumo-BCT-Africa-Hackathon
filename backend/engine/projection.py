@@ -16,7 +16,7 @@ import pandas as pd
 
 from backend import config
 from backend.engine import forecasting, reasons, words
-from backend.engine.simulate import NO_EXPIRY, cumulative_range, days_of_cover, simulate
+from backend.engine.simulate import NO_EXPIRY, cumulative_range, days_of_cover, simulate, stockout_probability
 from backend.engine.world import World
 
 MINUS = "\u2212"
@@ -168,8 +168,8 @@ def _reconcile(cohorts: list[tuple[int, float]], on_shelf: float) -> list[tuple[
     return cohorts
 
 
-def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
-    """The full picture for one series."""
+def series_view(snap: Snapshot, index: int, detail: bool = True, scenario: dict | None = None) -> dict:
+    """The full picture for one series. `scenario` is a what-if: {"delay_days": n, "surge_units": n}."""
     world, alerts = snap.world, snap.settings["alerts"]
     row = world.panel.series.iloc[index]
     facility, product, group = row["facility_id"], row["component"], row["blood_group"]
@@ -198,6 +198,16 @@ def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
     delivery_days = snap.delivery_days.get(facility, set())
     arrivals = _expected_arrivals(snap, facility, product, group, delivery_days)
     is_delivery = [d.weekday() in delivery_days for d in snap.dates]
+    scenario = scenario or {}
+    surge = float(scenario.get("surge_units") or 0)
+    delay = int(scenario.get("delay_days") or 0)
+    if surge > 0:                       # a sudden event today, on top of the forecast (for example a mass-casualty incident)
+        p10, p50, p90 = p10.copy(), p50.copy(), p90.copy()
+        p10[0] += surge; p50[0] += surge; p90[0] += surge
+        low, high = cumulative_range(p10, p50, p90)
+    if delay > 0:                       # every delivery arrives this many days late
+        arrivals = np.concatenate([np.zeros(delay), arrivals])[:snap.horizon]
+        is_delivery = ([False] * delay + is_delivery)[:snap.horizon]
     lead = alerts["order_lead_days"]
     upcoming = [t for t in range(lead, snap.horizon) if is_delivery[t]]
     n1 = upcoming[0] if upcoming else None                       # next delivery an order can still change
@@ -233,6 +243,21 @@ def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
     else:
         status, why = "steady", "steady"
 
+    # Risk numbers: the chance of running out, and what is likely to expire unused.
+    risk = snap.settings["risk"]
+    chance = stockout_probability(shelf, arrivals, mid.expired, p50, p90, [window, 7],
+                                  draws=risk["simulations"], seed=index * 1000 + snap.as_of.toordinal() % 1000)
+    alone = simulate(cohorts, p50, np.zeros(snap.horizon))        # the shelf with no deliveries
+    usable = max(0.0, shelf - float(alone.expired.sum()))
+    waste, waste_quiet = float(mid.expired.sum()), float(quiet.expired.sum())
+    first_waste = np.nonzero(quiet.expired > 0.5)[0]
+    if waste >= risk["waste_high_units"]:
+        waste_level = "high"
+    elif waste_quiet >= risk["waste_watch_units"]:
+        waste_level = "watch"
+    else:
+        waste_level = "none"
+
     def first_short(path) -> str | None:
         if path.short.sum() < 0.5:
             return None
@@ -258,6 +283,13 @@ def series_view(snap: Snapshot, index: int, detail: bool = True) -> dict:
         "shortfall_before_delivery": round(short_before, 1),
         "worst_shortfall_before_delivery": round(short_before_busy, 1),
         "expiring_before_delivery": round(expiring_before, 1),
+        "stockout_chance_before_delivery": round(chance[max(1, min(window, snap.horizon))], 2),
+        "stockout_chance_7_days": round(chance[7], 2),
+        "usable_units": int(round(usable)),
+        "waste_units_14_days": round(waste, 1), "waste_units_if_quiet": round(waste_quiet, 1),
+        "waste_level": waste_level,
+        "waste_from": words.day(snap.dates[int(first_waste[0])]) if len(first_waste) else None,
+        "scenario": {"delay_days": delay, "surge_units": surge} if (delay or surge) else None,
         "minimum_stock": floor,
         "emergency_lead_hours": round(snap.lead_hours.get(facility, 0.0), 1),
     })

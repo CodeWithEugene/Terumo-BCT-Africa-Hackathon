@@ -140,6 +140,14 @@ export interface Series {
   minimum_stock?: number
   emergency_lead_hours?: number
   deliveries_from_supply_forecast?: boolean
+  stockout_chance_before_delivery?: number
+  stockout_chance_7_days?: number
+  usable_units?: number
+  waste_units_14_days?: number
+  waste_units_if_quiet?: number
+  waste_level?: 'none' | 'watch' | 'high'
+  waste_from?: string | null
+  scenario?: { delay_days: number; surge_units: number } | null
   suggestion: Suggestion | null
   reasons: Reason[]
   decision?: Decision | null
@@ -206,6 +214,7 @@ export interface DriveSuggestion {
   groups_short: string[]
   text: string
   venue_text: string
+  call_out_draft?: string
   suggestion: Suggestion
   decision?: Decision | null
   action_label?: string
@@ -223,6 +232,15 @@ export interface RegionView extends ModeInfo {
   }[]
   drive_suggestions: DriveSuggestion[]
   allocation: AllocationPlan
+  apheresis: {
+    units_per_donation: number
+    week_units: number
+    week_units_busy: number
+    week_donors: number
+    week_donors_busy: number
+    days: { label: string; units: number; donors: number; donors_busy: number }[]
+    note: string
+  } | null
   supply_change_pct: number
   rates: { units_per_donation: number; median_testing_wait_days: number }
   what_if: { date: string; donors: number }[]
@@ -258,6 +276,7 @@ export interface AllocationPlan {
   units_moved: number
   lowest_cover_usual: number | null
   lowest_cover_fair: number | null
+  protected: { days: number; hospitals: string[] } | null
   text: string
   suggestion: Suggestion
   decision?: Decision | null

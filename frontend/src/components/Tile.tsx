@@ -38,6 +38,8 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
   // On a tinted tile, quiet text takes a navy tint: grey on amber or red reads as washed out.
   const quiet = series.status === 'act' || series.status === 'watch' ? 'text-ink/75' : 'text-muted'
   const delivery = series.next_delivery
+  const showChance = series.status !== 'steady' && (series.stockout_chance_before_delivery ?? 0) >= 0.05
+  const showWaste = series.waste_level === 'high' || series.waste_level === 'watch'
   const barLabel = t.tile.coverBar(
     empty ? t.tile.empty : noUse ? t.tile.noUse : `${big} ${unit}`.trim(),
     delivery ? t.tile.deliveryTick(delivery.label) : t.brief.noDelivery,
@@ -95,6 +97,22 @@ export function Tile({ series, index, selected }: { series: Series; index: numbe
           </span>
         )}
       </div>
+      {(showChance || showWaste) && (
+        <div className={cx('mt-2 space-y-1 border-t border-ink/10 pt-2 text-[0.8125rem]', quiet)}>
+          {showChance && (
+            <p className="flex items-center gap-1.5">
+              <Icon name="trend" size={14} />
+              {t.tile.chance(Math.round((series.stockout_chance_before_delivery ?? 0) * 100), delivery?.label ?? null)}
+            </p>
+          )}
+          {showWaste && (
+            <p className="flex items-center gap-1.5">
+              <Icon name="expiry" size={14} />
+              {t.tile.waste(Math.max(1, Math.round(Math.max(series.waste_units_14_days ?? 0, series.waste_units_if_quiet ?? 0))))}
+            </p>
+          )}
+        </div>
+      )}
       {series.decision && (
         <p className="mt-2 flex items-center gap-1.5 border-t border-ink/10 pt-2 text-[0.8125rem] font-medium text-ink">
           <Icon name="check" size={14} />

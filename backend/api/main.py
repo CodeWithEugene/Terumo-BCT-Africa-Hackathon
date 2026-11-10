@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from backend import config
@@ -120,8 +120,10 @@ def region(as_of: str | None = None, extra_donors: int | None = None, extra_date
 
 
 @app.get("/api/series/{series_id:path}", dependencies=[Depends(ready)])
-def series(series_id: str, as_of: str | None = None, user: User = Depends(current_user)) -> dict:
-    return service.series_detail(user, series_id, as_of)
+def series(series_id: str, as_of: str | None = None, delay_days: int = Query(0, ge=0, le=7),
+           surge_units: int = Query(0, ge=0, le=200), user: User = Depends(current_user)) -> dict:
+    """`delay_days` and `surge_units` are a what-if: nothing is saved."""
+    return service.series_detail(user, series_id, as_of, delay_days, surge_units)
 
 
 # --- Decisions and the audit log ---------------------------------------------------

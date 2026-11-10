@@ -132,6 +132,11 @@ def build(snap, index: int, view: dict) -> list[dict]:
                          f"{'expires' if round(view['expiring_before_delivery']) == 1 else 'expire'} "
                          f"before {view['next_delivery']['label']}.")
 
+    # 2b. Wastage risk: the other side of the same shelf.
+    if view.get("waste_level") == "high":
+        add(2, "expiry", f"About {words.units(round(view['waste_units_14_days']))} are likely to expire unused in the next "
+                         f"14 days. Another hospital could use them: ask the regional centre.")
+
     # 3. Requests going up or down.
     last, prev = float(context["last4"][index]), float(context["prev4"][index])
     alerts = snap.settings["alerts"]

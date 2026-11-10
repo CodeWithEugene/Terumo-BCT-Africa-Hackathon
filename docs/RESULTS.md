@@ -14,51 +14,52 @@ All data is the organisers' synthetic starter dataset.
 - WAPE: total units off divided by total units requested. Daily demand per series is mostly zero, so daily WAPE is high for any method.
 - MASE: error divided by the error of "same as this weekday last week". Below 1 beats that naive rule.
 - 7-day WAPE: the same, on totals for the first 7 days. Orders follow delivery cycles, so this is closer to how the forecast is used.
+- Cost: on 7-day totals, each unit forecast too low counts 5 and each unit too high counts 1, divided by units requested. A stock-out hurts a patient; an expired unit wastes a donation. Lower is better.
 - Range hit: share of days where real demand fell inside the forecast's p10 to p90 range. A well-set range hits about 80%.
 
 ### All series
 
-| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | range hit (model) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| all series | 20,679 | 0.164 | 135.6% | 0.93 | 71.3% | 95% | 0.160 | 132.8% | 0.91 | 67.9% | 96% |
+| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | cost (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | cost (model) | range hit (model) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| all series | 20,679 | 0.164 | 135.6% | 0.93 | 71.3% | 2.15 | 95% | 0.160 | 132.8% | 0.91 | 67.9% | 2.06 | 96% |
 
 ### By component
 
-| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | range hit (model) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FFP | 1,031 | 0.035 | 192.7% | 0.95 | 170.9% | 97% | 0.035 | 194.1% | 0.96 | 170.2% | 97% |
-| PLT | 815 | 0.027 | 187.8% | 1.08 | 138.3% | 99% | 0.026 | 180.2% | 1.04 | 134.5% | 99% |
-| RBC | 18,833 | 0.430 | 130.2% | 0.92 | 63.0% | 88% | 0.420 | 127.4% | 0.90 | 59.4% | 92% |
+| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | cost (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | cost (model) | range hit (model) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| FFP | 1,031 | 0.035 | 192.7% | 0.95 | 170.9% | 5.13 | 97% | 0.035 | 194.1% | 0.96 | 170.2% | 5.06 | 97% |
+| PLT | 815 | 0.027 | 187.8% | 1.08 | 138.3% | 4.19 | 99% | 0.026 | 180.2% | 1.04 | 134.5% | 4.24 | 99% |
+| RBC | 18,833 | 0.430 | 130.2% | 0.92 | 63.0% | 1.90 | 88% | 0.420 | 127.4% | 0.90 | 59.4% | 1.80 | 92% |
 
 ### Common against rare blood groups
 
-| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | range hit (model) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| common (O+, A+, B+) | 18,867 | 0.384 | 130.8% | 0.91 | 63.6% | 90% | 0.375 | 127.6% | 0.89 | 60.2% | 94% |
-| rare (all others) | 1,812 | 0.032 | 186.3% | 1.02 | 152.2% | 97% | 0.032 | 186.9% | 1.03 | 148.6% | 98% |
+| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | cost (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | cost (model) | range hit (model) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| common (O+, A+, B+) | 18,867 | 0.384 | 130.8% | 0.91 | 63.6% | 1.92 | 90% | 0.375 | 127.6% | 0.89 | 60.2% | 1.83 | 94% |
+| rare (all others) | 1,812 | 0.032 | 186.3% | 1.02 | 152.2% | 4.63 | 97% | 0.032 | 186.9% | 1.03 | 148.6% | 4.52 | 98% |
 
 ### By facility type (our fairness check: no kind of hospital should be served clearly worse)
 
-| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | range hit (model) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| county_hospital | 1,589 | 0.112 | 150.3% | 0.92 | 86.2% | 96% | 0.112 | 150.8% | 0.93 | 80.2% | 97% |
-| county_referral | 11,333 | 0.144 | 142.8% | 0.91 | 75.1% | 95% | 0.142 | 140.4% | 0.89 | 72.1% | 97% |
-| maternity_hospital | 858 | 0.224 | 139.5% | 0.97 | 70.7% | 92% | 0.210 | 130.8% | 0.91 | 63.3% | 94% |
-| mission_hospital | 452 | 0.139 | 164.3% | 1.01 | 104.7% | 95% | 0.139 | 164.2% | 1.01 | 95.3% | 96% |
-| national_referral | 4,933 | 0.484 | 105.1% | 0.93 | 47.9% | 89% | 0.472 | 102.3% | 0.90 | 47.0% | 93% |
-| private_hospital | 1,040 | 0.149 | 153.7% | 1.05 | 92.7% | 94% | 0.144 | 148.5% | 1.01 | 83.2% | 96% |
-| sub_county_hospital | 474 | 0.140 | 158.1% | 1.00 | 97.1% | 95% | 0.130 | 146.6% | 0.93 | 90.3% | 96% |
+| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | cost (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | cost (model) | range hit (model) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| county_hospital | 1,589 | 0.112 | 150.3% | 0.92 | 86.2% | 2.61 | 96% | 0.112 | 150.8% | 0.93 | 80.2% | 2.40 | 97% |
+| county_referral | 11,333 | 0.144 | 142.8% | 0.91 | 75.1% | 2.24 | 95% | 0.142 | 140.4% | 0.89 | 72.1% | 2.14 | 97% |
+| maternity_hospital | 858 | 0.224 | 139.5% | 0.97 | 70.7% | 2.14 | 92% | 0.210 | 130.8% | 0.91 | 63.3% | 2.05 | 94% |
+| mission_hospital | 452 | 0.139 | 164.3% | 1.01 | 104.7% | 3.16 | 95% | 0.139 | 164.2% | 1.01 | 95.3% | 2.79 | 96% |
+| national_referral | 4,933 | 0.484 | 105.1% | 0.93 | 47.9% | 1.49 | 89% | 0.472 | 102.3% | 0.90 | 47.0% | 1.50 | 93% |
+| private_hospital | 1,040 | 0.149 | 153.7% | 1.05 | 92.7% | 2.78 | 94% | 0.144 | 148.5% | 1.01 | 83.2% | 2.59 | 96% |
+| sub_county_hospital | 474 | 0.140 | 158.1% | 1.00 | 97.1% | 3.04 | 95% | 0.130 | 146.6% | 0.93 | 90.3% | 3.05 | 96% |
 
 ### By region
 
-| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | range hit (model) |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Eldoret | 2,867 | 0.173 | 129.5% | 0.96 | 69.6% | 94% | 0.167 | 125.0% | 0.93 | 65.7% | 96% |
-| Embu | 2,122 | 0.122 | 153.7% | 0.98 | 86.3% | 95% | 0.118 | 148.3% | 0.95 | 81.4% | 97% |
-| Kisumu | 3,306 | 0.145 | 140.8% | 0.91 | 70.6% | 95% | 0.142 | 137.7% | 0.89 | 67.2% | 97% |
-| Mombasa | 2,732 | 0.170 | 133.0% | 0.86 | 70.6% | 95% | 0.167 | 131.2% | 0.85 | 67.2% | 96% |
-| Nairobi | 7,139 | 0.211 | 126.5% | 0.91 | 63.5% | 94% | 0.209 | 125.3% | 0.90 | 60.6% | 96% |
-| Nakuru | 2,513 | 0.140 | 149.5% | 0.97 | 84.5% | 95% | 0.136 | 145.2% | 0.94 | 81.1% | 96% |
+| segment | units requested | MAE (baseline) | WAPE (baseline) | MASE (baseline) | 7-day WAPE (baseline) | cost (baseline) | range hit (baseline) | MAE (model) | WAPE (model) | MASE (model) | 7-day WAPE (model) | cost (model) | range hit (model) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Eldoret | 2,867 | 0.173 | 129.5% | 0.96 | 69.6% | 2.13 | 94% | 0.167 | 125.0% | 0.93 | 65.7% | 2.10 | 96% |
+| Embu | 2,122 | 0.122 | 153.7% | 0.98 | 86.3% | 2.61 | 95% | 0.118 | 148.3% | 0.95 | 81.4% | 2.49 | 97% |
+| Kisumu | 3,306 | 0.145 | 140.8% | 0.91 | 70.6% | 2.19 | 95% | 0.142 | 137.7% | 0.89 | 67.2% | 2.08 | 97% |
+| Mombasa | 2,732 | 0.170 | 133.0% | 0.86 | 70.6% | 2.09 | 95% | 0.167 | 131.2% | 0.85 | 67.2% | 1.93 | 96% |
+| Nairobi | 7,139 | 0.211 | 126.5% | 0.91 | 63.5% | 1.91 | 94% | 0.209 | 125.3% | 0.90 | 60.6% | 1.81 | 96% |
+| Nakuru | 2,513 | 0.140 | 149.5% | 0.97 | 84.5% | 2.51 | 95% | 0.136 | 145.2% | 0.94 | 81.1% | 2.48 | 96% |
 
 ### Did the model beat the baseline?
 
@@ -122,6 +123,17 @@ Baseline: stock stays as it is today.
 - Recall: of the real shortages, the share that had a warning. Higher is better.
 - Precision: of the warnings, the share followed by a real shortage. Higher means fewer false alarms.
 - Lead: median days from the warning to the first such request.
+
+### Is the stated chance of running out honest?
+
+Each alert states a chance of running out within 7 days (forecast: m1). If it is honest, the share that really ran short should be close to the chance given.
+
+| chance given | checks | average chance given | really ran short |
+| --- | --- | --- | --- |
+| under 20% | 3,661 | 3% | 4% |
+| 20 to 50% | 726 | 33% | 10% |
+| 50 to 80% | 383 | 64% | 26% |
+| over 80% | 222 | 91% | 76% |
 
 ### All held series
 

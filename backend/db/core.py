@@ -44,3 +44,19 @@ def table_exists(name: str, path: Path | None = None) -> bool:
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
         ).fetchone()
     return row is not None
+
+
+def replace_model_rows(conn: sqlite3.Connection, table: str, frame: pd.DataFrame, model: str) -> None:
+    """Swap one model's rows in a results table.
+
+    If the table was made by an older version with different columns, it is
+    dropped first; the build recomputes every model's rows anyway.
+    """
+    exists = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone()
+    if exists:
+        columns = [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+        if set(columns) != set(frame.columns):
+            conn.execute(f"DROP TABLE {table}")
+        else:
+            conn.execute(f"DELETE FROM {table} WHERE model = ?", (model,))
+    frame.to_sql(table, conn, if_exists="append", index=False)

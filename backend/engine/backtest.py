@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from backend import config
+from backend.db.core import replace_model_rows
 from backend.engine import models
 from backend.engine.demand import DemandPanel, load_panel
 
@@ -67,6 +68,9 @@ def _score(group: pd.DataFrame) -> dict[str, float]:
     total = group["actual"].sum()
     week = group[group["horizon"] <= 7].groupby(["origin", "series"])[["actual", "p50"]].sum()
     week_total = week["actual"].sum()
+    costs = config.load_settings("thresholds")["risk"]
+    gap = week["actual"] - week["p50"]
+    cost = (costs["stockout_cost"] * gap.clip(lower=0) + costs["waste_cost"] * (-gap).clip(lower=0)).sum()
     scale = group["naive_scale"].sum()
     return {
         "n": int(len(group)),
@@ -75,6 +79,7 @@ def _score(group: pd.DataFrame) -> dict[str, float]:
         "wape": float(err.sum() / total) if total else np.nan,
         "mase": float(err.sum() / scale) if scale else np.nan,
         "wape_7day": float((week["actual"] - week["p50"]).abs().sum() / week_total) if week_total else np.nan,
+        "asymmetric_cost": float(cost / week_total) if week_total else np.nan,
         "range_hit": float(((group["actual"] >= group["p10"] - 1e-9) & (group["actual"] <= group["p90"] + 1e-9)).mean()),
     }
 
@@ -107,10 +112,7 @@ def save(forecasts: pd.DataFrame, metrics: pd.DataFrame, panel: DemandPanel, db_
     conn = sqlite3.connect(db_path or config.DB_PATH)
     try:
         for name, frame in (("forecast", table), ("backtest_metric", metrics)):
-            exists = conn.execute("SELECT 1 FROM sqlite_master WHERE name=?", (name,)).fetchone()
-            if exists:
-                conn.execute(f"DELETE FROM {name} WHERE model = ?", (model_name,))
-            frame.to_sql(name, conn, if_exists="append", index=False)
+            replace_model_rows(conn, name, frame, model_name)
         conn.execute("CREATE INDEX IF NOT EXISTS ix_forecast ON forecast (model, origin, facility_id)")
         conn.commit()
     finally:

@@ -49,6 +49,8 @@ def forecast_section(metrics: pd.DataFrame) -> list[str]:
                 row[f"WAPE ({tag})"] = f"{m['wape'] * 100:.1f}%"
                 row[f"MASE ({tag})"] = f"{m['mase']:.2f}"
                 row[f"7-day WAPE ({tag})"] = f"{m['wape_7day'] * 100:.1f}%"
+                if "asymmetric_cost" in m and not pd.isna(m["asymmetric_cost"]):
+                    row[f"cost ({tag})"] = f"{m['asymmetric_cost']:.2f}"
                 row[f"range hit ({tag})"] = f"{m['range_hit'] * 100:.0f}%"
             out.append(row)
         return _table(pd.DataFrame(out))
@@ -143,6 +145,8 @@ def demand_section(db_path: Path | None = None) -> list[str]:
         "- MASE: error divided by the error of \"same as this weekday last week\". Below 1 beats that naive rule.",
         "- 7-day WAPE: the same, on totals for the first 7 days. Orders follow delivery cycles, so this is "
         "closer to how the forecast is used.",
+        "- Cost: on 7-day totals, each unit forecast too low counts 5 and each unit too high counts 1, divided by "
+        "units requested. A stock-out hurts a patient; an expired unit wastes a donation. Lower is better.",
         "- Range hit: share of days where real demand fell inside the forecast's p10 to p90 range. "
         "A well-set range hits about 80%.",
         "",
