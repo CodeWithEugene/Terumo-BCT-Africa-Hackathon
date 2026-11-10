@@ -1,4 +1,4 @@
-# Design — Sanguis Providus
+# Design — Providus
 
 The feeling: a clean, quiet, well-lit clinical room. Nothing shouts. A blood bank officer opens it with
 their morning tea, knows in five seconds whether today is fine, and acts in three clicks when it is not.
