@@ -310,3 +310,85 @@ This is the idea from the team's application: prevent the shortage upstream.
 Keep, in this order: Steps 0–6 (the workflow, end to end) → Step 7 (model vs baseline) → Step 11 (README,
 video) → Step 9 → Step 8 → Step 10. A finished small thing beats an unfinished large one; the brief says
 "build less and make it work".
+## 8. Design references (from Linet) — these override docs/DESIGN.md on colour and type
+
+Linet's references, with what was measured on each page on 10 Nov 2026:
+
+| Reference | Take this | Measured |
+| --- | --- | --- |
+| https://www.sightmd.com/about-us/ (**the favourite, main reference**; a little plain, so lift it with the next one) | Clean, bright and clinical. Navy and sky blue on white. Pale blue bands for navigation and section headers. Paired solid buttons, each with an icon. Clear, friendly structure. | Navy #141B4D, sky #71C5E8, pale blue #D4EEF8, grey text #595959, page grey #F2F2F2. Headings in Acumin Pro 500 to 600, body in Montserrat light. |
+| https://demophorius.com/ (what makes it interesting: character, motion and the blood theme) | Very large light headline. Scroll-driven movement: pinned headline, layered images that move at different speeds, soft blurred blue glow. Capitalised section labels with thin rules. One strong accent used rarely. Red appears only as the blood itself. | Black on white, accent #003CFF. Trivia Sans. 10px radius. |
+| https://www.instituteofhealth.com/ (a supporting reference) | Stats as rows: small label, large number, hairline between. Generous editorial spacing. Translucent "glass" buttons. | Charcoal #242424, off-white #F1F1F1. Lay Grotesk 500, slightly tight letter-spacing. 5px radius. |
+
+### Resulting direction (use these instead of the colour and type tokens in docs/DESIGN.md)
+
+- **Mood:** SightMD's clean navy-and-sky clinical look as the base. Make it more interesting with
+  Demophorius's large type, soft glow and motion. Use Institute of Health's stat rows and spacing
+  for the numbers.
+- **Type:** Hanken Grotesk (free, self-hosted with @fontsource/hanken-grotesk) in place of the paid
+  fonts above. Weight 600 for headings, 500 for key numbers and labels, 400 for body.
+  Letter-spacing -0.01em on large sizes. Tabular numbers everywhere.
+- **Colour tokens:**
+  - `bg` #FFFFFF, `bg-alt` #F2F2F2 (alternate sections), `surface` #FFFFFF, `line` #E3E5E8
+  - `ink` #141B4D (navy, for headings and key numbers), `body` #595959 (body text), `muted` #6B7280
+  - `primary` #141B4D (navy: primary buttons, selected nav, focus ring), white text on it
+  - `sky` #71C5E8 (secondary button background with navy text, chart line, selected states)
+  - `sky-soft` #D4EEF8 (navigation band, section header bands, forecast range band, the soft glow)
+  - Status colours stay as in docs/DESIGN.md: steady green, watch amber, act brick red.
+- **Layout moves to borrow:**
+  - A pale blue (`sky-soft`) band for the top navigation and for section headers, as on SightMD.
+  - Primary (navy) and secondary (sky) buttons side by side, each with a small icon.
+  - The brief line is a large left-set headline in navy with generous space around it.
+  - Present the blood groups as **hairline stat rows or tiles**: small label, large number
+    (days of cover), thin rule.
+  - Small capitalised section labels with a thin rule.
+  - One soft blurred sky-blue glow behind the brief line. Nothing else decorative in the app.
+  - Corner radius 6 to 10px. Hairlines instead of shadows.
+- **The blood theme:** inside the working app, red is only for the "Act" status and the stock-out
+  marker. The blood imagery lives on the landing page (below).
+
+### Looking at the references, and at your own work
+
+- Before Step 5, try to open each link and take your own screenshots to study. Save nothing from
+  those sites into the repo. If your environment cannot reach a site, say so and use the notes above.
+  Do not guess beyond them.
+- Then tell Linet in five lines what you will build and wait for her OK before starting the interface.
+- **Check your own build with screenshots.** After each interface step, run the app, capture every
+  screen at 360px, 768px and 1280px wide, look at the images, and fix what is off before the
+  checkpoint. Say in the checkpoint that you did this and what you fixed.
+- Take the feel and the direction. Do not copy layouts, images, logos or text from these sites.
+- Keep every docs/DESIGN.md rule that is not about colour or type: accessibility and contrast
+  checks, plain wording, the cover bar, the answer-first brief line, never colour alone.
+
+### Responsive: a hard requirement for every screen
+
+- Phone (360 to 480px): one column, bottom navigation bar, detail opens as a full page, tables turn
+  into stacked rows, touch targets at least 44px, no sideways scrolling anywhere.
+- Tablet (768 to 1024px): two columns for the blood groups, navigation collapsed to icons.
+- Desktop (1280px and up): full navigation, four columns for the blood groups, detail as a side
+  panel. Content stops growing at 1120px wide and stays centred on very large screens.
+- Use fluid type and spacing (CSS clamp) so nothing jumps between sizes. Charts redraw to the
+  container width and keep their labels readable on a phone.
+
+### Step 7b — Landing page with depth and scroll (60 min, after Step 7, never before)
+
+Linet wants the 3D and scroll character of demophorius.com. It lives on a public landing page that
+leads into sign-in. The working screens (brief, detail, decisions, regional, accuracy) stay still
+and fast: people use them every morning, sometimes on 3G.
+
+- A short scroll story, four beats: (1) the problem in one line with one number from
+  docs/DATA_FACTS.md; (2) how the tool sees a shortage coming; (3) a person decides; (4) sign in.
+- **Depth and motion with light techniques only:** CSS 3D transforms, perspective and layered
+  parallax driven by scroll (Framer Motion `useScroll` / `useTransform`). A blood bag or tube drawn
+  in SVG with shading for depth, which tilts slightly and **fills as the reader scrolls**, ending at
+  a "days of cover" mark. A pinned headline that changes per beat. The soft sky glow drifts slowly.
+- **No WebGL and no three.js or other 3D engine.** Ask Linet before adding any animation
+  dependency beyond Framer Motion.
+- The landing page is code-split so none of its code or images load inside the app after sign-in.
+  Budget: under 150KB extra, images lazy-loaded.
+- Respect `prefers-reduced-motion`: show the same content as a plain, still page.
+- On a phone the story becomes simple stacked sections with gentle fades. No pinning, no parallax.
+- The deep red of the blood in this illustration is the one place red is used outside "Act".
+- **Cut line:** a still hero with the illustration and the sign-in cards. Skip the scroll story.
+- **Commit:** `Add landing page`
+- Order of sacrifice: this step is dropped before anything in Steps 0 to 7, 9 or 11.
