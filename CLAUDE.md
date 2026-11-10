@@ -1,6 +1,6 @@
 # CLAUDE.md — working rules for this repo
 
-Team MediBora, Terumo BCT Africa Hackathon 2026. Product working name: **Sanguis Providus**.
+Team MediBora, Terumo BCT Africa Hackathon 2026. Product working name: **Providus**.
 Read `docs/BUILD_PLAN.md` and `docs/DESIGN.md` before writing any code. Follow the plan step by step.
 
 ## Hard rules (never break these)

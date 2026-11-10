@@ -1,6 +1,6 @@
 // Every sentence a person reads lives here, so another language can be added by settings.
 export const en = {
-  appName: 'Sanguis Providus',
+  appName: 'Providus',
   tagline: 'Blood stock early warning',
   syntheticNote: 'Demo on synthetic data. No real hospital, donor or patient.',
 

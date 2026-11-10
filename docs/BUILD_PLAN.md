@@ -1,4 +1,4 @@
-# Build plan — Sanguis Providus (Team MediBora)
+# Build plan — Providus (Team MediBora)
 
 Hackathon: Terumo BCT Africa Hackathon 2026. Challenge area: **forecasting and stock-out early warning**.
 Submission closes **Wednesday 11 Nov, 12:00 EAT**. Demo video should be recorded by 10:00.

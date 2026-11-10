@@ -9,7 +9,7 @@ This tool does none of that. It reads **counts** out of such a system (stock, re
 forecasts shortages, and hands **orders** back as requests that a person has approved.
 
 ```
-BBIS / hospital stock book  ──counts──▶  Sanguis Providus  ──approved order (FHIR SupplyRequest)──▶  regional centre
+BBIS / hospital stock book  ──counts──▶  Providus  ──approved order (FHIR SupplyRequest)──▶  regional centre
                                                 │
                                                 └──monthly indicators (DHIS2 dataValueSet)──▶  national reporting
 ```

@@ -38,7 +38,7 @@ CONFIG_DIR = ROOT / "config"
 DOCS_DIR = ROOT / "docs"
 DB_PATH = Path(os.environ.get("SP_DB_PATH", ROOT / "data" / "app.db"))
 
-APP_NAME = "Sanguis Providus"
+APP_NAME = "Providus"
 
 
 @lru_cache(maxsize=None)

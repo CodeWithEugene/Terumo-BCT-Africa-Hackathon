@@ -8,7 +8,7 @@ start recording on the landing page. Read the **Say** column aloud. It is about 
 
 | Do | Say |
 | --- | --- |
-| Landing page, top. Pause two seconds. | "We are team MediBora, and this is Sanguis Providus. It runs on the hackathon's synthetic dataset." |
+| Landing page, top. Pause two seconds. | "We are team MediBora, and this is Providus. It runs on the hackathon's synthetic dataset." |
 | Scroll to **The problem**. | "One in eight requests for blood is not fully met. When a shelf runs out, the emergency delivery takes a median of 5.2 hours. Today the officer finds out when the request arrives." |
 | Scroll to **Seeing it coming**. | "We found that demand is steady. Supply is what swings: collections fall by over a third when schools close. So we forecast both, and walk every shelf 14 days forward." |
 | Scroll to **A person decides**. Press **Take the guided tour**. | "And the tool only suggests. A person decides." |
@@ -29,7 +29,7 @@ start recording on the landing page. Read the **Say** column aloud. It is about 
 | 10. The right shelves | "Here is our key finding. On 61 percent of the days a hospital ran short, another hospital in its region held spare units. The blood was enough. It was on the wrong shelf. Sharing by days of cover, with the same blood, cuts shortages by 32 percent in our replay, and wastage falls too. Grace requests approval; nothing moves on its own." |
 | 11. Plan collections | "Four weeks ahead, the tool shows the supply gap, suggests extra drives with a draft donor call-out, and says how many platelet apheresis donors to book." |
 | 12. No identities | "No donor or patient identities are ever loaded. Each role sees only its own hospitals. A central copy sits in Oracle Autonomous Database." |
-| 13. Works offline | "It runs on one computer and keeps working with no connection. Sanguis Providus: it suggests, a person decides. Thank you." |
+| 13. Works offline | "It runs on one computer and keeps working with no connection. Providus: it suggests, a person decides. Thank you." |
 
 ## Before recording
 - Rebuild first: `python -m backend.pipeline.build`. For a clean decisions log, delete `data/app.db` before the build.

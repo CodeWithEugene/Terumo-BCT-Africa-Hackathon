@@ -1,4 +1,4 @@
-# MediBora: Sanguis Providus shows a blood service which blood groups will run short, where, and in how many days, and how to share the blood it already has
+# MediBora: Providus shows a blood service which blood groups will run short, where, and in how many days, and how to share the blood it already has
 
 Terumo BCT Africa Hackathon 2026 · Challenge area: forecasting and stock-out early warning
 
