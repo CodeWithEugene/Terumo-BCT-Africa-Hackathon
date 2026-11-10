@@ -16,8 +16,17 @@ export const en = {
   signIn: {
     label: 'Sign in',
     title: 'Know which blood groups will run short, before they do.',
-    lead: 'Choose a test account to see the morning brief. These accounts are for the demo only; their passwords are in the README.',
-    openAs: 'Open as',
+    lead: 'Sign in with your role. Each role sees only the hospitals it is responsible for.',
+    open: 'Sign in',
+    chooseRole: 'Choose your role',
+    chooseRoleLead: 'Your role sets what you can see and what you can approve.',
+    roles: {
+      hospital_officer: 'Your own hospital: the morning brief, suggested orders and your decisions.',
+      regional_officer: 'Every hospital your centre supplies: stock, supply outlook and fair-share plans.',
+    } as Record<string, string>,
+    chooseSite: 'Choose your hospital',
+    otherRole: 'Choose another role',
+    loadingRoles: 'Loading the roles…',
     manual: 'Sign in with a name and password',
     username: 'Name',
     password: 'Password',
@@ -25,7 +34,6 @@ export const en = {
     wrong: 'That name and password do not match.',
     notBuilt: 'The database has not been built yet. Run "python -m backend.pipeline.build", then reload.',
     unreachable: 'Could not reach the server. Start the backend on port 8000, then reload.',
-    testPassword: 'Test password',
   },
 
   top: {
@@ -388,6 +396,7 @@ export const en = {
     finish: 'Finish',
     of: (n: number, total: number) => `${n} of ${total}`,
     keys: 'Arrow keys move between steps. Esc ends the tour.',
+    move: 'Drag to move. Drag the corner to resize. Double-click to put it back.',
     switching: 'Signing in as the next role…',
     steps: [
       { user: 'joseph', route: '#/', target: 'brief-line', title: 'The answer comes first',

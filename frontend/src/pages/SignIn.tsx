@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Button } from '../components/States'
 import { t } from '../i18n/en'
@@ -41,52 +41,107 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
     }
   }
 
+  const dialog = useRef<HTMLDialogElement | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  // The roles on offer, in the order the server lists them.
+  const roles = Array.from(new Map((accounts ?? []).map((a) => [a.role, a.role_label])))
+  const sites = (accounts ?? []).filter((a) => a.role === role)
+
+  function open() {
+    setRole(null)
+    setProblem(null)
+    setManual(accounts !== null && accounts.length === 0)
+    dialog.current?.showModal()
+  }
+
+  function chooseRole(chosen: string) {
+    const matches = (accounts ?? []).filter((a) => a.role === chosen)
+    if (matches.length === 1) void signIn(matches[0].username)
+    else setRole(chosen)
+  }
+
+  const option =
+    'flex min-h-11 w-full items-center gap-3 rounded-control border border-ink/20 bg-white px-4 py-3 text-left hover:border-ink hover:bg-sky-soft disabled:opacity-60'
+
   return (
     <div>
-        {problem && (
-          <p role="alert" className="mt-6 max-w-xl rounded-card border border-[#f0cdc9] bg-act-soft px-4 py-3 text-sm text-act">
-            {problem}
-          </p>
-        )}
+      <Button icon="arrow" className="mt-8" onClick={open} data-sign-in>
+        {t.signIn.open}
+      </Button>
 
-        <ul className="mt-8 grid max-w-[880px] gap-3 md:grid-cols-3">
-          {accounts === null &&
-            [0, 1, 2].map((i) => (
-              <li key={i} className="flex h-44 flex-col justify-between rounded-card border border-line bg-white p-5" aria-hidden={i > 0}>
-                <span className="text-sm text-muted">{i === 0 ? 'Loading the test accounts…' : ''}</span>
-                <span className="h-11 animate-pulse rounded-control bg-bg-alt" />
-              </li>
-            ))}
-          {accounts?.map((account, i) => (
-            <li key={account.username} className="flex flex-col rounded-card border border-line bg-white/95 p-5">
-              <p className="text-xs font-medium tracking-[0.06em] text-muted uppercase">{account.role_label}</p>
-              <p className="mt-2 text-lg leading-snug font-semibold text-ink">{account.facility_name}</p>
-              <p className="mt-1 flex items-center gap-1.5 text-sm">
-                <Icon name="user" size={16} />
-                {account.display_name}
-              </p>
-              <p className="mb-4" />
-              <Button
-                variant={i === 2 ? 'sky' : 'primary'}
-                icon="arrow"
-                className="mt-auto w-full"
-                disabled={busy !== null}
-                onClick={() => signIn(account.username)}
-              >
-                {busy === account.username ? t.common.loading : `${t.signIn.openAs} ${account.display_name}`}
+      <dialog
+        ref={dialog}
+        aria-labelledby="sign-in-title"
+        className="m-auto w-[min(28rem,calc(100vw-1.5rem))] rounded-card border border-line bg-white p-0 text-ink shadow-[0_16px_48px_rgba(20,27,77,0.22)] backdrop:bg-ink/40"
+        onClick={(e) => {
+          if (e.target === dialog.current) dialog.current?.close() // a click outside the box
+        }}
+      >
+        <div className="p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="sign-in-title" className="text-xl leading-snug font-semibold">
+                {manual ? t.signIn.manual : role ? t.signIn.chooseSite : t.signIn.chooseRole}
+              </h2>
+              {!manual && !role && <p className="mt-1 text-sm">{t.signIn.chooseRoleLead}</p>}
+            </div>
+            <button
+              type="button"
+              aria-label={t.common.close}
+              className="-mt-1 -mr-2 grid size-11 shrink-0 place-items-center rounded-control hover:bg-sky-soft"
+              onClick={() => dialog.current?.close()}
+            >
+              <Icon name="close" size={18} />
+            </button>
+          </div>
+
+          {problem && (
+            <p role="alert" className="mt-4 rounded-card border border-[#f0cdc9] bg-act-soft px-4 py-3 text-sm text-act">
+              {problem}
+            </p>
+          )}
+
+          {!manual && accounts === null && <p className="mt-5 text-sm text-muted">{t.signIn.loadingRoles}</p>}
+
+          {!manual && !role && roles.length > 0 && (
+            <ul className="mt-5 grid gap-2.5">
+              {roles.map(([key, label]) => (
+                <li key={key}>
+                  <button type="button" className={option} disabled={busy !== null} onClick={() => chooseRole(key)}>
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-sky-soft">
+                      <Icon name={key === 'regional_officer' ? 'region' : 'brief'} size={20} />
+                    </span>
+                    <span>
+                      <span className="block font-semibold">{label}</span>
+                      {t.signIn.roles[key] && <span className="mt-0.5 block text-sm">{t.signIn.roles[key]}</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!manual && role && (
+            <>
+              <ul className="mt-5 grid gap-2.5">
+                {sites.map((account) => (
+                  <li key={account.username}>
+                    <button type="button" className={option} disabled={busy !== null} onClick={() => signIn(account.username)}>
+                      <span className="font-semibold">{busy === account.username ? t.common.loading : account.facility_name}</span>
+                      <span className="ml-auto"><Icon name="arrow" size={18} /></span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button variant="text" icon="back" className="mt-3 !px-0" onClick={() => setRole(null)}>
+                {t.signIn.otherRole}
               </Button>
-            </li>
-          ))}
-        </ul>
+            </>
+          )}
 
-        <div className="mt-6 max-w-sm">
-          {!manual ? (
-            <Button variant="text" className="!px-0" onClick={() => setManual(true)}>
-              {t.signIn.manual}
-            </Button>
-          ) : (
+          {manual ? (
             <form
-              className="grid gap-3 rounded-card border border-line bg-white p-5"
+              className="mt-5 grid gap-3"
               onSubmit={(e) => {
                 e.preventDefault()
                 void signIn(name, password)
@@ -116,10 +171,21 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
               <Button type="submit" disabled={busy !== null}>
                 {t.signIn.submit}
               </Button>
+              {roles.length > 0 && (
+                <Button variant="text" icon="back" className="!px-0" onClick={() => setManual(false)}>
+                  {t.signIn.otherRole}
+                </Button>
+              )}
             </form>
+          ) : (
+            <p className="mt-5 border-t border-line pt-3">
+              <Button variant="text" className="!px-0" onClick={() => setManual(true)}>
+                {t.signIn.manual}
+              </Button>
+            </p>
           )}
         </div>
-
+      </dialog>
     </div>
   )
 }
