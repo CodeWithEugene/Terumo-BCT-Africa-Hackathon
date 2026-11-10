@@ -1,0 +1,49 @@
+# Who can see what. The server enforces this file; the Data & privacy page shows it.
+
+roles:
+  hospital_officer:
+    label: Hospital blood bank officer
+    sees: Their own hospital only.
+    can: Accept, change or reject suggested orders for their hospital.
+  regional_officer:
+    label: Regional centre officer
+    sees: Every hospital their regional centre supplies.
+    can: Accept, change or reject suggestions as requests for approval.
+
+# Test log-ins for the demo. These are shown on the sign-in screen on purpose.
+# They are not real people and not real passwords. Replace before any real use.
+demo_users:
+  - username: amina
+    display_name: Amina W.
+    role: hospital_officer
+    facility_id: HSP-006          # a county referral hospital
+    demo_password: thika-demo
+  - username: joseph
+    display_name: Joseph O.
+    role: hospital_officer
+    facility_id: HSP-003          # a maternity hospital
+    demo_password: maternity-demo
+  - username: grace
+    display_name: Grace M.
+    role: regional_officer
+    facility_id: RBTC-NBO         # the Nairobi regional centre
+    demo_password: nairobi-demo
+
+session_hours: 12
+undo_seconds: 10
+
+# A reason is required when a suggestion is changed or rejected.
+reason_codes:
+  change:
+    - {code: local_knowledge, label: I know something the data does not show}
+    - {code: event_expected, label: A busy period or event is expected}
+    - {code: storage_limit, label: Not enough fridge space}
+    - {code: expiry_risk, label: Units would expire before use}
+    - {code: centre_short, label: The centre cannot supply this much}
+    - {code: other, label: Other (add a note)}
+  reject:
+    - {code: forecast_wrong, label: The forecast looks wrong}
+    - {code: already_ordered, label: Already ordered or arranged}
+    - {code: stock_count_wrong, label: The stock count is out of date}
+    - {code: not_needed, label: Not needed for clinical reasons}
+    - {code: other, label: Other (add a note)}
