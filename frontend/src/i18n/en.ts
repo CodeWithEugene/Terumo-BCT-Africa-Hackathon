@@ -388,6 +388,7 @@ export const en = {
     finish: 'Finish',
     of: (n: number, total: number) => `${n} of ${total}`,
     keys: 'Arrow keys move between steps. Esc ends the tour.',
+    move: 'Drag to move. Drag the corner to resize. Double-click to put it back.',
     switching: 'Signing in as the next role…',
     steps: [
       { user: 'joseph', route: '#/', target: 'brief-line', title: 'The answer comes first',
