@@ -3,17 +3,19 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from backend import config
-from backend.api import auth, service, standards
+from backend.api import auth, security, service, standards
 from backend.api.auth import User, current_user
 from backend.config import APP_NAME, DB_PATH
 from backend.db.app_tables import ensure_app_tables, set_setting
 from backend.db.core import table_exists
 
 app = FastAPI(title=APP_NAME, docs_url="/api/docs", openapi_url="/api/openapi.json")
+
+app.middleware("http")(security.security_middleware)
 
 Component = Literal["RBC", "FFP", "PLT"]
 
@@ -49,13 +51,15 @@ def public_facts() -> dict:
 # --- Sign-in ---------------------------------------------------------------------
 
 class Login(BaseModel):
-    username: str
-    password: str
+    username: str = Field(max_length=64)
+    password: str = Field(max_length=200)
 
 
 @app.get("/api/demo-users", dependencies=[Depends(ready)])
 def demo_users() -> dict:
-    """The test log-ins, shown on the sign-in screen. Demo only."""
+    """The test log-ins, shown on the sign-in screen. Demo only; switch off with SP_DEMO_LOGINS=0."""
+    if not security.demo_logins_enabled():
+        return {**service.mode_info(), "users": []}
     access = config.load_settings("access")
     world_names = service.get_world().facility["name"]
     return {**service.mode_info(), "users": [
@@ -65,13 +69,17 @@ def demo_users() -> dict:
 
 
 @app.post("/api/login", dependencies=[Depends(ready)])
-def login(body: Login, response: Response) -> dict:
+def login(body: Login, request: Request, response: Response) -> dict:
+    if security.too_many_failures(body.username, request):
+        raise HTTPException(status_code=429, detail="Too many wrong passwords. Wait 5 minutes and try again.")
     user = auth.authenticate(body.username, body.password)
     if user is None:
+        security.record_failure(body.username, request)
         raise HTTPException(status_code=401, detail="That name and password do not match.")
+    security.clear_failures(body.username, request)
     hours = config.load_settings("access")["session_hours"]
     response.set_cookie(auth.COOKIE, auth.make_cookie(user.user_id), max_age=hours * 3600,
-                        httponly=True, samesite="lax")
+                        httponly=True, samesite="lax", secure=security.cookie_secure())
     service.audit(user, "sign_in")
     return {**service.mode_info(), "user": service.user_card(user)}
 

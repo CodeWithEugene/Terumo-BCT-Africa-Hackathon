@@ -31,7 +31,7 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
       onSignedIn(reply.user, reply)
     } catch (e) {
       const error = e as ApiError
-      setProblem(error.status === 401 ? t.signIn.wrong : error.status === 503 ? t.signIn.notBuilt : t.signIn.unreachable)
+      setProblem(error.status === 401 ? t.signIn.wrong : error.status === 429 ? error.message : error.status === 503 ? t.signIn.notBuilt : t.signIn.unreachable)
     } finally {
       setBusy(null)
     }
