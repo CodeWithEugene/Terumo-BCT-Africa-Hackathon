@@ -199,10 +199,12 @@ INDEXES = [
 
 
 def fingerprint(raw_dir: Path | None = None) -> str:
-    """A short code for "the raw data, the settings and the backend code as they are now"."""
+    """A short code for "the raw data, the settings and the forecasting code as they are now"."""
     digest = hashlib.sha256()
-    files = sorted((raw_dir or config.RAW_DIR).glob("*.csv")) + sorted(config.CONFIG_DIR.glob("*.yaml")) \
-        + sorted((config.ROOT / "backend").rglob("*.py"))
+    # Only what can change the results: the data, the settings, and the pipeline and engine code.
+    # Changes to the web server or the central sync do not need a rebuild.
+    code = [path for folder in ("pipeline", "engine", "db") for path in (config.ROOT / "backend" / folder).rglob("*.py")]
+    files = sorted((raw_dir or config.RAW_DIR).glob("*.csv")) + sorted(config.CONFIG_DIR.glob("*.yaml")) + sorted(code)
     for path in files:
         digest.update(path.name.encode())
         digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
