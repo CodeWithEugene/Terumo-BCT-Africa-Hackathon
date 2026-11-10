@@ -1,0 +1,35 @@
+# Blood facts the code relies on. Change here, not in code.
+
+blood_groups: ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"]
+
+# Shelf life in days, by component.
+shelf_life_days: {RBC: 42, WB: 35, PLT: 5, FFP: 365, CRYO: 365}
+
+# Hospitals ask for a component ("requested"). The shelf can hold more than one
+# kind of unit that fills that request. In this dataset about a quarter of the
+# units issued for red cell requests are whole blood, so red cell cover counts both.
+products:
+  RBC: {label: Red cells, filled_by: [RBC, WB]}
+  FFP: {label: Plasma,    filled_by: [FFP]}
+  PLT: {label: Platelets, filled_by: [PLT]}
+
+# Fridge readings that are sensor faults, not temperatures.
+temperature_glitch_values: [-99.0, 99.9, 0.0]
+safe_fridge_range_c: [2.0, 6.0]
+
+# Which donor groups a patient group can receive. INFORMATION ONLY.
+# The tool never applies this. Issue decisions stay with qualified staff.
+red_cell_compatible_donors:
+  "O-":  ["O-"]
+  "O+":  ["O+", "O-"]
+  "A-":  ["A-", "O-"]
+  "A+":  ["A+", "A-", "O+", "O-"]
+  "B-":  ["B-", "O-"]
+  "B+":  ["B+", "B-", "O+", "O-"]
+  "AB-": ["AB-", "A-", "B-", "O-"]
+  "AB+": ["AB+", "AB-", "A+", "A-", "B+", "B-", "O+", "O-"]
+plasma_compatible_donors:
+  "O":  ["O", "A", "B", "AB"]
+  "A":  ["A", "AB"]
+  "B":  ["B", "AB"]
+  "AB": ["AB"]

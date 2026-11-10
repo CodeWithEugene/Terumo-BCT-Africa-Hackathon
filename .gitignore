@@ -12,3 +12,10 @@ __pycache__/
 .venv/
 .pytest_cache/
 .DS_Store
+*.tsbuildinfo
+.vite/
+
+# design skills are installed per machine, not committed (third-party instruction packs)
+.claude/skills/
+skills-lock.json
+.agents/
