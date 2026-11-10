@@ -1,44 +1,111 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Shell } from './components/Shell'
+import { QuietState } from './components/States'
+import { t } from './i18n/en'
+import { api, ApiError, clearCache, getWithCache, readCache, saveCache } from './lib/api'
+import { go, useRoute } from './lib/route'
+import { BriefPage } from './pages/BriefPage'
+import { SignIn } from './pages/SignIn'
+import type { AsOfDates, Component, ModeInfo, User } from './types'
 
-type Health = 'checking' | 'ok' | 'unreachable'
+type Session = { state: 'checking' } | { state: 'out' } | { state: 'in'; user: User }
 
 export default function App() {
-  const [health, setHealth] = useState<Health>('checking')
+  const route = useRoute()
+  const [session, setSession] = useState<Session>({ state: 'checking' })
+  const [mode, setMode] = useState<ModeInfo | null>(null)
+  const [dates, setDates] = useState<AsOfDates | null>(null)
+  const [asOf, setAsOf] = useState<string>('')
+  const [facilityId, setFacilityId] = useState<string>('')
+  const [component, setComponent] = useState<Component>('RBC')
+  const [refreshKey] = useState(0)
 
+  // Who is signed in? If the server cannot be reached, use the last known user so the cached brief can show.
   useEffect(() => {
-    fetch('/api/health')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { status?: string }) => setHealth(d.status === 'ok' ? 'ok' : 'unreachable'))
-      .catch(() => setHealth('unreachable'))
+    api
+      .get<{ user: User } & ModeInfo>('/api/me')
+      .then((d) => {
+        saveCache('me', d.user)
+        setSession({ state: 'in', user: d.user })
+        setMode(d)
+      })
+      .catch((e: ApiError) => {
+        const known = readCache<User>('me')
+        if (e.status !== 401 && known) setSession({ state: 'in', user: known.data })
+        else setSession({ state: 'out' })
+      })
   }, [])
 
-  const message = {
-    checking: 'Checking the server…',
-    ok: 'Server is running.',
-    unreachable: 'Could not reach the server. Start the backend on port 8000.',
-  }[health]
+  const user = session.state === 'in' ? session.user : null
 
+  useEffect(() => {
+    if (!user) return
+    setFacilityId((current) => current || user.facilities[0]?.facility_id || user.facility_id)
+    getWithCache<AsOfDates>('/api/asof-dates')
+      .then(({ data }) => {
+        setDates(data)
+        setAsOf((current) => current || data.default)
+      })
+      .catch(() => undefined)
+  }, [user])
+
+  const onMode = useCallback((m: ModeInfo) => setMode(m), [])
+
+  async function signOut() {
+    try {
+      await api.post('/api/logout')
+    } catch {
+      /* signing out locally is enough when offline */
+    }
+    clearCache()
+    setSession({ state: 'out' })
+    setFacilityId('')
+    setAsOf('')
+    go({ page: 'brief' })
+  }
+
+  if (session.state === 'checking') {
+    return <div className="grid min-h-dvh place-items-center text-sm text-muted">{t.common.loading}</div>
+  }
+  if (!user) {
+    return (
+      <SignIn
+        onSignedIn={(u) => {
+          saveCache('me', u)
+          setSession({ state: 'in', user: u })
+        }}
+      />
+    )
+  }
+
+  const ready = asOf !== '' && facilityId !== ''
   return (
-    <div className="min-h-dvh">
-      <header className="bg-sky-soft">
-        <div className="mx-auto flex max-w-[1120px] items-center px-4 py-3 sm:px-6">
-          <span className="text-base font-semibold text-ink">Sanguis Providus</span>
-        </div>
-      </header>
-      <main className="mx-auto max-w-[1120px] px-4 py-[clamp(2rem,8vw,6rem)] sm:px-6">
-        <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
-          Blood stock early warning
-        </p>
-        <h1 className="mt-3 max-w-[18ch] text-[clamp(2rem,6vw,3.5rem)] leading-[1.1]">
-          Sanguis Providus
-        </h1>
-        <p className="mt-4 max-w-[52ch]">
-          Shows which blood groups will run short, where, and in how many days.
-        </p>
-        <p className="mt-8 border-t border-line pt-4 text-sm text-muted" role="status">
-          {message}
-        </p>
-      </main>
-    </div>
+    <Shell
+      user={user}
+      route={route}
+      mode={mode}
+      dates={dates}
+      asOf={asOf}
+      onAsOf={setAsOf}
+      facilityId={facilityId}
+      onFacility={setFacilityId}
+      onSignOut={signOut}
+    >
+      {!ready ? (
+        <p className="text-sm text-muted">{t.common.loading}</p>
+      ) : route.page === 'brief' || route.page === 'group' ? (
+        <BriefPage
+          asOf={asOf}
+          facilityId={facilityId}
+          component={component}
+          onComponent={setComponent}
+          onMode={onMode}
+          selectedId={route.page === 'group' ? route.id : undefined}
+          refreshKey={refreshKey}
+        />
+      ) : (
+        <QuietState title={t.common.comingSoon} text="" />
+      )}
+    </Shell>
   )
 }

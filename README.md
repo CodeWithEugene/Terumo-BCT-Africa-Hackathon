@@ -29,9 +29,13 @@ they supply.
     hospital will receive, and regional centre stock, each compared with a simple baseline.
   - An alert check against what really happened, compared with a simple cover rule (`docs/RESULTS.md`).
   - An API with three test log-ins, role-based access, Accept / Change / Reject, and an append-only audit log.
+  - A sign-in screen with three one-tap test accounts and the morning brief: one plain sentence, then the eight
+    blood groups with days of cover, a cover bar and a status. It keeps the last brief in the browser and
+    shows it with a banner if the server cannot be reached. It works at 360, 768 and 1280 pixels wide.
   - If the forecast model is missing or fails, the API serves the baseline and says so in every response.
 - What is mocked or not finished:
-  - The interface (Steps 5 to 9) is not built yet. The frontend is a starter page.
+  - The interface has sign-in and the morning brief so far. Detail, decisions, accuracy, regional and
+    privacy screens are still to come.
   - The trained forecast model (Step 7) is not built yet, so the app currently runs in fallback mode.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.
