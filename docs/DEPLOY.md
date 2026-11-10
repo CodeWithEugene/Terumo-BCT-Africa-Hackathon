@@ -14,7 +14,7 @@ backend (`frontend/vercel.json`), so the sign-in cookie stays on one site.
 1. Sign in at render.com with GitHub. **New → Blueprint**, pick this repo. Render reads `render.yaml`.
 2. When asked for `SP_ALLOWED_ORIGINS`, leave it empty for now. Press **Apply**.
 3. The first build takes about 5 minutes: it installs Python packages and builds the database from
-   `data/raw`. The build needs about 600 MB of memory and the server about 300 MB at rest.
+   `data/raw`. The build needs about 600 MB of memory and the server up to about 520 MB once every page has been opened, so `render.yaml` asks for the Standard plan (2 GB).
 4. Copy the service address, for example `https://sanguis-providus-api.onrender.com`. Open
    `<address>/api/health` and check it says `"status":"ok"`.
 5. If the address is not exactly `https://sanguis-providus-api.onrender.com`, change the three
