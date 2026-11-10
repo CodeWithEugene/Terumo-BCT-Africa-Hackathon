@@ -67,7 +67,7 @@ def test_call_out_draft_and_apheresis_hint_are_drafts_with_stated_assumptions():
     for item in view["drive_suggestions"]:
         assert "STOP" in item["call_out_draft"] and len(item["call_out_draft"]) <= 300
     hint = view["apheresis"]
-    assert hint and len(hint["days"]) == 7 and "Assumption" in hint["note"]
+    assert hint and len(hint["days"]) == 7 and "settings" in hint["note"]
     assert hint["week_donors_busy"] >= hint["week_donors"] >= 0
 
 

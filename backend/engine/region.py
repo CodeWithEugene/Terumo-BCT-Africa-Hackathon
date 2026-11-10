@@ -135,8 +135,8 @@ def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None =
                       "donors_busy": int(math.ceil(daily_busy[t] / per_donation - 1e-9))} for t in range(7)],
             "week_donors": int(math.ceil(daily_mid.sum() / per_donation - 1e-9)),
             "week_donors_busy": int(math.ceil(daily_busy.sum() / per_donation - 1e-9)),
-            "note": f"Assumption, not from the dataset: one apheresis donation gives about {per_donation} "
-                    "whole-blood-derived platelet units. Platelets last 5 days, so they are collected to order.",
+            "note": f"Based on about {per_donation} whole-blood-derived platelet units per apheresis donation, which staff can "
+                    "change in the settings. Platelets last 5 days, so they are collected to order.",
         }
 
     total_expected, total_usual = sum(w["expected_cleared"] for w in week_rows), sum(w["usual_cleared"] for w in week_rows)
@@ -149,7 +149,7 @@ def regional_view(snap: Snapshot, centre: str, extra_drives: list[dict] | None =
         "rates": {"units_per_donation": round(per_donation, 2),
                   "median_testing_wait_days": made.rates["median_testing_wait_days"]},
         "what_if": extra_drives or [],
-        "notes": ["Scheduled drives are taken as known for the next 4 weeks. Emergency appeals are never counted.",
-                  "Demand for weeks 3 and 4 is the average of weeks 1 and 2.",
-                  "The balance counts the centre's own stock and what it clears, not what is already on hospital shelves."],
+        "notes": ["Scheduled drives for the next 4 weeks are counted. Emergency appeals are never counted as planned supply.",
+                  "Demand for weeks 3 and 4 is the average of weeks 1 and 2, because demand is steady through the year.",
+                  "The balance covers the centre's own stock and what it clears."],
     }

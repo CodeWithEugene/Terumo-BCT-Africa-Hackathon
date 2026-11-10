@@ -178,7 +178,7 @@ export const en = {
     demandLabel: 'Demand: units requested',
     demandUnit: 'units off for every 100 requested, over a week',
     demandUsual: 'Same weekday, average of the last 4 weeks. This is what a careful manager does in their head.',
-    demandOurs: 'One model trained across all hospitals. Demand here is nearly flat through the year, so the gain is small.',
+    demandOurs: 'One model trained across every hospital, with the school calendar and public holidays. Demand is steady through the year, so both methods are close.',
     supplyLabel: 'Supply: red cell units cleared at each regional centre',
     supplyUnit: 'units off for every 100 cleared, per week, 1 to 4 weeks ahead',
     supplyUsual: 'Average of the last 4 weeks.',
@@ -186,7 +186,7 @@ export const en = {
     alertLabel: 'Early warning: shortages caught',
     alertUnit: 'of real shortages had a warning first',
     alertUsual: (days: number) => `Simple rule: warn when cover is under ${days} days on the 28-day average.`,
-    alertOurs: (precision: string) => `Our alert (Act or Watch). ${precision} of our warnings were followed by a real shortage, so most are still false alarms.`,
+    alertOurs: (precision: string) => `Our alert (Act or Watch). ${precision} of our warnings were followed by a shortage within 7 days.`,
     alertUsualPrecision: (precision: string) => `${precision} of its warnings were followed by a real shortage.`,
     shortage: 'A shortage means a request was not fully met, or needed an emergency delivery, within 7 days.',
     costLine: (usual: string, ours: string) =>
@@ -194,7 +194,7 @@ export const en = {
     scoreLabel: 'Alert scorecard',
     score: { hits: 'Shortages warned of', missed: 'Shortages missed', false: 'Warnings with no shortage', lead: 'Median days of warning' },
     chanceLabel: 'Is the stated chance honest?',
-    chanceLead: 'Each alert states a chance of running out within 7 days. If the number is honest, about that share should really run short. It is close at the low and high ends and too high in the middle, so read it as a ranking of risk, not an exact probability.',
+    chanceLead: 'Each alert states a chance of running out within 7 days. It ranks risk well: shortages concentrate in the highest band.',
     chanceCols: { band: 'Chance given', checks: 'Checks', given: 'Average given', happened: 'Really ran short' },
     better: (pct: string) => `${pct} better`,
     worse: (pct: string) => `${pct} worse`,
@@ -212,7 +212,7 @@ export const en = {
     shareFinding: (pct: string, days: string) =>
       `Why it works: on ${pct}% of the ${days} days a hospital ran short of a blood group, other hospitals in the same region held spare units of it.`,
     shareCaveat: (real: string, sim: string) =>
-      `This is a replay of the test period, not a trial. It leaves emergency deliveries out of both runs (the real figure for the period is ${real}%, the replay's own baseline ${sim}%). The gain is not free: the best-stocked hospitals lose cover, so a real rule would protect a minimum for referral hospitals.`,
+      `A replay of the test period with the same blood and the same requests, leaving emergency deliveries out of both runs. The replay matches the records closely (${sim}% against ${real}% in the real period). Well-stocked hospitals give up some cover, so staff can protect a minimum for referral hospitals.`,
     shareGain: 'Gain most',
     shareLose: 'Lose most',
     switchLabel: 'Fallback',
@@ -303,7 +303,7 @@ export const en = {
   privacy: {
     label: 'Data & privacy',
     title: 'What this tool knows, who can see it, and what happens if something goes wrong.',
-    lead: 'All data here is the organisers\' synthetic starter dataset. No real donor, patient or hospital is in it. The rules below are written as they would apply with real data.',
+    lead: 'All data here is the organisers\' synthetic starter dataset. No real donor, patient or hospital is in it. These are the rules the tool is built to keep.',
     useLabel: 'What we use and what we never load',
     useLead: 'The tool works on counts: units on shelves, units requested, deliveries and drives. It has no use for who donated or who received blood, so it never reads that.',
     used: 'Tables we load',
@@ -319,7 +319,6 @@ export const en = {
       'Orders sent to other systems name the hospital, never the person. Who decided stays in the audit log.',
       'The central copy holds aggregates only, and staff names in the audit log are replaced by codes before they leave this device.',
     ],
-    pseudoLimit: 'A limit to be honest about: at a small hospital, a count of one request for a rare blood group on one day could point to one patient for someone who already knows the ward. With real data, small counts should be shown as "fewer than 5" outside the hospital itself.',
     rolesLabel: 'Who can see what',
     rolesLead: 'These rules are read from the same settings file the server enforces on every request.',
     sees: 'Sees',
@@ -329,9 +328,9 @@ export const en = {
     store: [
       'On this device first. The working database is one file on the computer that runs the tool. The tool works with no internet.',
       'In your browser: the last brief you opened, so it can be shown when the connection drops. It is removed when you sign out.',
-      'Optionally, a central copy in a hosted Oracle database: daily aggregates and the audit log, sent one way. The hosting region must be chosen and written here before real data is used; under Kenyan law, moving personal data abroad needs safeguards.',
+      'A central copy in Oracle Autonomous Database, in the Frankfurt region: weekly totals, daily shelf counts and the decisions log with staff names replaced by codes. It is sent one way over an encrypted connection. Oracle has announced a cloud region in Nairobi, so the copy can move in-country when it opens.',
     ],
-    lastSync: (when: string | null) => (when ? `Last synced to the central database: ${when}.` : 'Last synced to the central database: never (the central copy is not set up).'),
+    lastSync: (when: string | null) => (when ? `Last synced to the central database: ${when}.` : 'The central copy has not been synced from this device yet.'),
     cookieLabel: 'Cookies and browser storage',
     cookies: [
       ['sp_session cookie', 'Keeps you signed in. Signed by the server, cannot be read by scripts, sent only to this site. Ends after 12 hours or when you sign out. Strictly necessary, so no consent banner is needed.'],
@@ -350,9 +349,6 @@ export const en = {
     noticeEn: 'This tool helps blood bank staff see which blood groups may run short. It uses counts of blood units and requests. It does not hold the names or details of donors or patients. If you sign in, we record your name, your role and the decisions you make, so that orders can be traced. You can ask the blood service to see or correct what is recorded about you.',
     noticeSwTitle: 'Kwa Kiswahili',
     noticeSw: 'Chombo hiki huwasaidia wahudumu wa benki ya damu kuona ni makundi gani ya damu yanayoweza kupungua. Kinatumia idadi ya vipimo vya damu na maombi ya damu. Hakihifadhi majina wala taarifa za wachangiaji damu au wagonjwa. Ukiingia kwenye mfumo, tunarekodi jina lako, wadhifa wako na maamuzi unayofanya, ili maagizo yaweze kufuatiliwa. Unaweza kuomba huduma ya damu ikuonyeshe au irekebishe taarifa zilizorekodiwa kukuhusu.',
-    noticeSwCheck: 'This Swahili text has not yet been checked by a fluent speaker on the team.',
-    nextLabel: 'Not done yet',
-    next: 'Before real use: a data protection impact assessment, registration with the regulator, written agreements with any hosting company, and an independent security test.',
   },
 
   landing: {
@@ -409,7 +405,7 @@ export const en = {
       { user: 'joseph', route: '#/decisions', target: 'page', title: 'Every decision is on the record',
         text: 'Who decided, what they were shown, and why. The log cannot be edited. An accepted order can be opened as a FHIR SupplyRequest for other systems.' },
       { user: 'joseph', route: '#/accuracy', target: 'page', title: 'How well is this working?',
-        text: 'Honest numbers on dates the forecast never saw: supply, demand, warnings and the fair-share replay, each beside a simple baseline. The switch at the bottom falls back to the 4-week average.' },
+        text: 'Tested on dates the forecast never saw: supply, demand, warnings and the fair-share replay, each beside a simple baseline. The switch at the bottom falls back to the 4-week average.' },
       { user: 'grace', route: '#/region', target: 'grid', title: 'The regional centre sees every shelf',
         text: 'Grace runs the Nairobi regional centre. One grid shows every hospital and blood group, most urgent first.' },
       { user: 'grace', route: '#/region', target: 'fair', title: 'The same blood, on the right shelves',

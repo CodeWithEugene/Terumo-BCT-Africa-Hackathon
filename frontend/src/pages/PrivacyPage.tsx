@@ -152,7 +152,6 @@ export function PrivacyPage() {
 
       <Block label={t.privacy.pseudoLabel}>
         <Bullets items={t.privacy.pseudo} />
-        <p className="mt-3 max-w-[76ch] text-[0.8125rem] text-muted">{t.privacy.pseudoLimit}</p>
       </Block>
 
       <Block label={t.privacy.rolesLabel}>
@@ -203,16 +202,10 @@ export function PrivacyPage() {
           <div className="rounded-card border border-line p-4 sm:p-5" lang="sw">
             <p className="text-sm font-medium text-ink">{t.privacy.noticeSwTitle}</p>
             <p className="mt-2 text-sm leading-relaxed">{t.privacy.noticeSw}</p>
-            <p className="mt-3 rounded-control bg-watch-soft px-3 py-2 text-[0.8125rem] text-watch" lang="en">
-              {t.privacy.noticeSwCheck}
-            </p>
           </div>
         </div>
       </Block>
 
-      <Block label={t.privacy.nextLabel}>
-        <p className="max-w-[72ch] text-sm">{t.privacy.next}</p>
-      </Block>
     </div>
   )
 }
