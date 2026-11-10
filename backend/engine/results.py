@@ -102,15 +102,26 @@ def verdict_section(metrics: pd.DataFrame, db_path: Path | None = None) -> list[
 
 
 def render(db_path: Path | None = None) -> str:
+    lines = ["# Results", "", "Written by `python -m backend.pipeline.build`. Do not edit by hand.",
+             "All data is the organisers' synthetic starter dataset.", ""]
+    if table_exists("backtest_metric", db_path):
+        lines += demand_section(db_path)
+    if table_exists("supply_metric", db_path):
+        from backend.engine.supply_backtest import results_section as supply_section
+
+        lines += supply_section(db_path)
+    if table_exists("alert_metric", db_path):
+        from backend.engine.alert_backtest import results_section
+
+        lines += results_section(db_path)
+    return "\n".join(lines)
+
+
+def demand_section(db_path: Path | None = None) -> list[str]:
     settings = config.load_settings("thresholds")
     metrics = read("SELECT * FROM backtest_metric", path=db_path)
     names = [m for m in models.REGISTRY if m in set(metrics["model"])]
-    lines = [
-        "# Results",
-        "",
-        "Written by `python -m backend.engine.backtest`. Do not edit by hand.",
-        "All data is the organisers' synthetic starter dataset.",
-        "",
+    return [
         "## Demand forecast",
         "",
         f"**Test:** weekly forecast dates from {settings['backtest']['first_origin']} to "
@@ -134,15 +145,6 @@ def render(db_path: Path | None = None) -> str:
         *forecast_section(metrics),
         *verdict_section(metrics, db_path),
     ]
-    if table_exists("supply_metric", db_path):
-        from backend.engine.supply_backtest import results_section as supply_section
-
-        lines += supply_section(db_path)
-    if table_exists("alert_metric", db_path):
-        from backend.engine.alert_backtest import results_section
-
-        lines += results_section(db_path)
-    return "\n".join(lines)
 
 
 def write_results(db_path: Path | None = None, write_docs: bool = True) -> str:

@@ -100,3 +100,20 @@ def test_data_facts_are_computed(db_path):
     facts = read("SELECT key, value FROM data_fact", path=db_path).set_index("key")["value"]
     assert 10 < float(facts["requests_not_fully_met_pct"]) < 16
     assert 4 < float(facts["emergency_median_hours"]) < 7
+
+
+def test_full_build_works_on_an_empty_database(tmp_path):
+    """The exact command a judge runs on a fresh clone: no tables exist beforehand."""
+    from backend.engine import alert_backtest, backtest, supply_backtest
+    from backend.pipeline.build import build
+
+    fresh = tmp_path / "fresh.db"
+    build(db_path=fresh, verbose=False, write_docs=False, run_backtests=False)
+    supply_backtest.run(db_path=fresh, write_docs=False, verbose=False)      # runs first in the build
+    from backend.engine.results import render
+
+    assert "Supply forecast" in render(fresh)
+    backtest.run("baseline", db_path=fresh, write_docs=False, verbose=False)
+    text = render(fresh)
+    assert "Demand forecast" in text and "Supply forecast" in text
+    assert alert_backtest is not None

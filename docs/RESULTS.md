@@ -1,6 +1,6 @@
 # Results
 
-Written by `python -m backend.engine.backtest`. Do not edit by hand.
+Written by `python -m backend.pipeline.build`. Do not edit by hand.
 All data is the organisers' synthetic starter dataset.
 
 ## Demand forecast
