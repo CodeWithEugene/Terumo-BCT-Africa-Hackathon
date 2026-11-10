@@ -50,6 +50,8 @@ they supply.
     settings the server enforces), where data is stored, cookies, what to do if something leaks, a data-flow
     diagram, and a privacy notice in English and Swahili.
   - Offline proof: a "Simulate offline" switch that blocks server calls and shows the cached brief with a banner.
+  - **A guided tour.** "Take the guided tour" on the landing page (or "Guided tour" inside the app) walks through
+    every main feature in 13 short steps, changing screen and role by itself. It never blocks the app.
   - **Two risks side by side.** Each blood group shows the chance of running out (from 400 simulated demand
     paths) next to the units likely to expire unused, and how many units on the shelf are usable before expiry.
   - **What-if on any blood group:** a mass-casualty surge or a late delivery redraws the chart and the risks.
@@ -70,15 +72,19 @@ they supply.
   - The FHIR order is FHIR-shaped: field names were checked against the HL7 R4 page, but it has not been run
     through a validator, and product codes are local stand-ins for ISBT 128 codes.
   - The DHIS2 export uses made-up element and organisation unit IDs (an illustrative mapping).
-  - The SMS preview is labelled "Demo, not sent". No message is sent.
+  - The SMS preview is labelled "Demo, not sent". No message is sent. Sending is the next piece of work; the plan is in
+    `docs/SMS_HANDOVER.md`.
   - The Swahili privacy notice has not yet been checked by a fluent speaker on the team.
   - Drive suggestions are requests to a drive planner. Nothing is booked and no donor is contacted.
   - Units exposed to a warm fridge cannot be dated from the data, so they are not removed from projected stock.
   - School terms, public holidays and malaria months are approximate settings in `config/calendar_ke.yaml`.
 
 Demo video (3 minutes or less): to come (script in `docs/DEMO_SCRIPT.md`)
-Live demo: none (not deployed) · Test log-ins (demo only): `amina` / `thika-demo`, `joseph` / `maternity-demo`,
-`grace` / `nairobi-demo`
+Live demo: none (not deployed)
+
+Test log-ins (demo only, not real accounts): one tap on the sign-in cards, or by name and password:
+`amina` / `thika-demo`, `joseph` / `maternity-demo`, `grace` / `nairobi-demo`. The passwords are not shown
+in the app and are never sent to the browser.
 
 ## How to run it
 You need Python 3.11 or newer and Node.js 20 or newer.
@@ -106,7 +112,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**2. Build the database from the raw files** (1 to 3 minutes: it also trains and tests the forecasts)
+**2. Build the database from the raw files** (1 to 3 minutes the first time: it trains and tests the forecasts.
+Run again with nothing changed and it finishes in under a second; add `--force` to rebuild anyway)
 ```bash
 python -m backend.pipeline.build
 ```

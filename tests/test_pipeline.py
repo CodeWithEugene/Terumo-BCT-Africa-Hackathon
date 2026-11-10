@@ -130,3 +130,11 @@ def test_unit_labels_are_pseudonymised_and_request_links_are_gone(db_path):
     assert "transfer_id" not in moves.columns and "request_id" not in moves.columns
     joined = read("SELECT COUNT(*) n FROM unit_move m JOIN unit u USING (unit_id)", path=db_path)["n"][0]
     assert joined == read("SELECT COUNT(*) n FROM unit_move", path=db_path)["n"][0]      # still match inside one build
+
+
+def test_a_second_build_with_nothing_changed_is_skipped(tmp_path, capsys):
+    from backend.pipeline import build as pipeline
+
+    mark = pipeline.fingerprint()
+    assert mark == pipeline.fingerprint() and len(mark) == 20
+    assert not pipeline.up_to_date(tmp_path / "missing.db", mark)

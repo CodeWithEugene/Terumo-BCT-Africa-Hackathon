@@ -40,6 +40,7 @@ export function OfflineSwitch() {
     <button
       type="button"
       role="switch"
+      data-tour="offline"
       aria-checked={on}
       title={t.offline.help}
       onClick={() => {
@@ -86,6 +87,7 @@ export function Shell({
   onSignOut,
   extra,
   panelOpen = false,
+  onStartTour,
   children,
 }: {
   user: User
@@ -99,6 +101,7 @@ export function Shell({
   onSignOut: () => void
   extra?: ReactNode
   panelOpen?: boolean
+  onStartTour?: () => void
   children: ReactNode
 }) {
   const items = navItems(user)
@@ -148,6 +151,17 @@ export function Shell({
             <p className="text-sm font-medium text-ink">{user.display_name}</p>
             <p className="text-[0.8125rem] text-muted">{user.role_label}</p>
           </div>
+          {onStartTour && (
+            <button
+              type="button"
+              onClick={onStartTour}
+              title={t.tour.start}
+              className="flex min-h-11 w-full items-center justify-center gap-3 rounded-control text-sm font-medium text-body hover:bg-sky-soft hover:text-ink xl:justify-start xl:px-3"
+            >
+              <Icon name="arrow" />
+              <span className="hidden xl:inline">{t.tour.startShort}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onSignOut}
@@ -185,6 +199,11 @@ export function Shell({
                   {facility?.county} · {facility?.region_name} region
                 </p>
               </div>
+            )}
+            {onStartTour && (
+              <button type="button" onClick={onStartTour} className="min-h-11 shrink-0 rounded-control px-2 text-[0.8125rem] font-medium text-ink underline-offset-4 hover:underline md:hidden">
+                {t.tour.startShort}
+              </button>
             )}
             <button
               type="button"

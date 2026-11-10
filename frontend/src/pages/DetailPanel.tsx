@@ -148,7 +148,7 @@ export function DetailPanel({
 
           <p className="mt-1 text-[0.8125rem] text-body">{t.detail.usable(s.usable_units ?? s.units_on_shelf, s.units_on_shelf)}</p>
 
-          <section className="mt-6">
+          <section className="mt-6" data-tour="risks">
             <SectionLabel>{t.detail.risksLabel}</SectionLabel>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="rounded-card border border-line p-4">
@@ -176,7 +176,7 @@ export function DetailPanel({
             </div>
           </section>
 
-          <section className="mt-6">
+          <section className="mt-6" data-tour="whatif">
             <SectionLabel>{t.detail.whatIfLabel}</SectionLabel>
             <div className="mt-3 rounded-card border border-line p-4">
               <p className="text-sm">{t.detail.whatIfHelp}</p>
@@ -201,7 +201,7 @@ export function DetailPanel({
             </div>
           </section>
 
-          <section className="mt-6">
+          <section className="mt-6" data-tour="chart">
             <SectionLabel>{t.detail.chartTitle}</SectionLabel>
             <div className="mt-3">
               <ProjectionChart series={s} showActual={actual} />
@@ -270,7 +270,7 @@ export function DetailPanel({
             </section>
           )}
 
-          <section className="mt-6">
+          <section className="mt-6" data-tour="suggestion">
             <SectionLabel>{t.detail.suggestion}</SectionLabel>
             <div className="mt-3">
               {s.scenario ? (

@@ -98,3 +98,15 @@ def test_sync_exits_cleanly_when_not_set_up(monkeypatch, capsys):
         monkeypatch.delenv(name, raising=False)
     assert oracle.main() == 0
     assert "not set up" in capsys.readouterr().out
+
+
+def test_one_tap_sign_in_never_sends_a_password_to_the_browser(monkeypatch):
+    client = TestClient(app)
+    listed = client.get("/api/demo-users").json()["users"]
+    assert listed and all("demo_password" not in user and "password" not in str(user).lower() for user in listed)
+    reply = client.post("/api/demo-login", json={"username": "joseph"})
+    assert reply.status_code == 200 and reply.json()["user"]["username"] == "joseph"
+    assert client.get("/api/me").status_code == 200
+    assert TestClient(app).post("/api/demo-login", json={"username": "someone-else"}).status_code == 403
+    monkeypatch.setenv("SP_DEMO_LOGINS", "0")
+    assert TestClient(app).post("/api/demo-login", json={"username": "joseph"}).status_code == 403

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Shell } from './components/Shell'
+import { readTourStep, Tour, writeTourStep } from './components/Tour'
 import { QuietState } from './components/States'
 import { t } from './i18n/en'
 import { api, ApiError, clearCache, getWithCache, readCache, saveCache } from './lib/api'
@@ -47,6 +48,33 @@ export default function App() {
   }, [])
 
   const user = session.state === 'in' ? session.user : null
+  const [tourStep, setTourStepState] = useState<number | null>(() => readTourStep())
+  const setTourStep = useCallback((step: number | null) => {
+    writeTourStep(step)
+    setTourStepState(step)
+  }, [])
+
+  // Sign in to a test account without a password (used by the tour to change role).
+  const demoSignIn = useCallback(async (username: string): Promise<boolean> => {
+    try {
+      const reply = await api.post<{ user: User } & ModeInfo>('/api/demo-login', { username })
+      setMode(reply)
+      saveCache('me', reply.user)
+      setFacilityId(reply.user.facilities[0]?.facility_id ?? reply.user.facility_id)
+      setSession({ state: 'in', user: reply.user })
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
+  // A new page starts at the top. Opening a blood group beside the brief on a wide screen does not jump.
+  const page = route.page
+  useEffect(() => {
+    const beside = page === 'group' && window.matchMedia('(min-width: 1280px)').matches
+    if (!beside && tourStep === null) window.scrollTo({ top: 0, behavior: 'instant' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
 
   useEffect(() => {
     if (!user) return
@@ -80,6 +108,7 @@ export default function App() {
     }
     clearCache()
     setSession({ state: 'out' })
+    setTourStep(null)
     setFacilityId('')
     setAsOf('')
     go({ page: 'brief' })
@@ -92,6 +121,12 @@ export default function App() {
     return (
       <Suspense fallback={<div className="grid min-h-dvh place-items-center text-sm text-muted">{t.common.loading}</div>}>
         <Landing
+          onStartTour={async () => {
+            if (await demoSignIn(t.tour.steps[0].user)) {
+              setTourStep(0)
+              window.scrollTo(0, 0)
+            }
+          }}
           onSignedIn={(u, m) => {
             setMode(m)
             saveCache('me', u)
@@ -116,7 +151,9 @@ export default function App() {
       onFacility={setFacilityId}
       onSignOut={signOut}
       panelOpen={route.page === 'group'}
+      onStartTour={() => setTourStep(0)}
     >
+      {tourStep !== null && <Tour step={tourStep} username={user.username} onStep={setTourStep} onNeedUser={demoSignIn} />}
       {!ready ? (
         <p className="text-sm text-muted">{t.common.loading}</p>
       ) : route.page === 'brief' || route.page === 'group' ? (

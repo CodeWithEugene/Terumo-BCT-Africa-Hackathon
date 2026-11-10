@@ -34,7 +34,6 @@ export interface DemoUser {
   role: string
   role_label: string
   facility_name: string
-  demo_password: string
 }
 
 export interface Reason {

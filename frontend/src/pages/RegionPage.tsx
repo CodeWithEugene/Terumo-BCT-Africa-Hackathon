@@ -101,7 +101,7 @@ export function RegionPage({
       </section>
 
       {/* The grid: hospitals down, blood groups across */}
-      <section>
+      <section data-tour="grid">
         <SectionLabel>{t.region.gridLabel}</SectionLabel>
         <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[0.8125rem] text-muted">
           <span>{t.region.gridHelp}</span>
@@ -234,7 +234,7 @@ export function RegionPage({
           </section>
 
           {/* Fair-share allocation */}
-          <section className="mt-10">
+          <section className="mt-10" data-tour="fair">
             <SectionLabel>{t.region.fairLabel}</SectionLabel>
             <p className="mt-3 max-w-[76ch] text-sm">{view.allocation.text}</p>
             {view.allocation.lowest_cover_usual !== null && view.allocation.lowest_cover_fair !== null && (
@@ -286,7 +286,7 @@ export function RegionPage({
           </section>
 
           {/* Drive suggestions */}
-          <section className="mt-10">
+          <section className="mt-10" data-tour="drives">
             <SectionLabel>{t.region.suggestLabel}</SectionLabel>
             <div className="mt-3 grid gap-3 xl:grid-cols-2">
               {view.drive_suggestions.length === 0 && <QuietState title={t.brief.allSteadyTitle} text={t.region.suggestNone} />}

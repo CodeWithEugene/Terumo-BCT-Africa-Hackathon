@@ -122,7 +122,7 @@ export function AccuracyPage({ onMode }: { onMode: (m: ModeInfo) => void }) {
   return (
     <div>
       <SectionLabel>{t.accuracy.label}</SectionLabel>
-      <h1 className="mt-5 text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.accuracy.title}</h1>
+      <h1 data-tour="page" className="mt-5 text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.accuracy.title}</h1>
       {data.test_period && <p className="mt-3 max-w-[64ch]">{t.accuracy.lead(day(data.test_period.first), day(data.test_period.last))}</p>}
 
       <Compare label={t.accuracy.supplyLabel} unit={t.accuracy.supplyUnit} usual={supply('baseline')?.wape} ours={supply('model')?.wape}

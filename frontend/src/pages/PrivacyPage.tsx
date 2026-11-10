@@ -119,7 +119,7 @@ export function PrivacyPage() {
   return (
     <div>
       <SectionLabel>{t.privacy.label}</SectionLabel>
-      <h1 className="mt-5 max-w-[26ch] text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.privacy.title}</h1>
+      <h1 data-tour="page" className="mt-5 max-w-[26ch] text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.privacy.title}</h1>
       <p className="mt-3 max-w-[68ch]">{t.privacy.lead}</p>
 
       <Block label={t.privacy.useLabel}>

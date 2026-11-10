@@ -23,11 +23,15 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
       })
   }, [])
 
-  async function signIn(username: string, secret: string) {
+  // One tap for a test account (the server signs it in; no password reaches the browser),
+  // or a name and password typed into the form.
+  async function signIn(username: string, secret?: string) {
     setBusy(username)
     setProblem(null)
     try {
-      const reply = await api.post<{ user: User } & ModeInfo>('/api/login', { username, password: secret })
+      const reply = secret === undefined
+        ? await api.post<{ user: User } & ModeInfo>('/api/demo-login', { username })
+        : await api.post<{ user: User } & ModeInfo>('/api/login', { username, password: secret })
       onSignedIn(reply.user, reply)
     } catch (e) {
       const error = e as ApiError
@@ -56,15 +60,13 @@ export function SignInPanel({ onSignedIn }: { onSignedIn: (user: User, mode: Mod
                 <Icon name="user" size={16} />
                 {account.display_name}
               </p>
-              <p className="mt-1 mb-4 text-[0.8125rem] text-muted">
-                {t.signIn.testPassword}: <code className="text-body">{account.demo_password}</code>
-              </p>
+              <p className="mb-4" />
               <Button
                 variant={i === 2 ? 'sky' : 'primary'}
                 icon="arrow"
                 className="mt-auto w-full"
                 disabled={busy !== null}
-                onClick={() => signIn(account.username, account.demo_password)}
+                onClick={() => signIn(account.username)}
               >
                 {busy === account.username ? t.common.loading : `${t.signIn.openAs} ${account.display_name}`}
               </Button>

@@ -36,7 +36,7 @@ export function DecisionsPage({ user }: { user: User }) {
   return (
     <div>
       <SectionLabel>{t.decisions.label}</SectionLabel>
-      <h1 className="mt-5 max-w-[24ch] text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.decisions.title}</h1>
+      <h1 data-tour="page" className="mt-5 max-w-[24ch] text-[clamp(1.750rem,4vw,2.500rem)] leading-[1.120]">{t.decisions.title}</h1>
       <p className="mt-3 max-w-[56ch]">{t.decisions.lead}</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">

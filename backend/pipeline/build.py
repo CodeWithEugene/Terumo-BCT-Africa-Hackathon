@@ -198,12 +198,44 @@ INDEXES = [
 ]
 
 
+def fingerprint(raw_dir: Path | None = None) -> str:
+    """A short code for "the raw data, the settings and the backend code as they are now"."""
+    digest = hashlib.sha256()
+    files = sorted((raw_dir or config.RAW_DIR).glob("*.csv")) + sorted(config.CONFIG_DIR.glob("*.yaml")) \
+        + sorted((config.ROOT / "backend").rglob("*.py"))
+    for path in files:
+        digest.update(path.name.encode())
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()[:20]
+
+
+def up_to_date(db_path: Path, mark: str) -> bool:
+    """True when the database was fully built from exactly this data, these settings and this code."""
+    if not db_path.exists():
+        return False
+    conn = sqlite3.connect(db_path)
+    try:
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if not {"app_setting", "forecast", "alert_metric", "supply_metric", "allocation_replay"} <= tables:
+            return False
+        row = conn.execute("SELECT value FROM app_setting WHERE key = 'build_fingerprint'").fetchone()
+        return bool(row) and row[0] == mark
+    finally:
+        conn.close()
+
+
 def build(db_path: Path | None = None, raw_dir: Path | None = None, verbose: bool = True,
-          write_docs: bool = True, run_backtests: bool = True) -> dict[str, int]:
+          write_docs: bool = True, run_backtests: bool = True, force: bool = False) -> dict[str, int]:
     """Rebuild every pipeline table. Tables written by the app (users, decisions,
     audit log) are left untouched if they already exist."""
     db_path = db_path or config.DB_PATH
     started = time.time()
+    mark = fingerprint(raw_dir)
+    if run_backtests and not force and up_to_date(db_path, mark):
+        if verbose:
+            print("Already up to date: the data, settings and code have not changed since the last build.")
+            print("Nothing to do. To rebuild anyway, run: python -m backend.pipeline.build --force")
+        return {}
 
     def say(message: str) -> None:
         if verbose:
@@ -287,6 +319,9 @@ def build(db_path: Path | None = None, raw_dir: Path | None = None, verbose: boo
         say("Replaying the fair-share allocation...")
         allocation.run(db_path=db_path, write_docs=write_docs, verbose=False)
         say("Results written to docs/RESULTS.md")
+    if run_backtests:
+        from backend.db.app_tables import set_setting
+        set_setting("build_fingerprint", mark, db_path)
     say(f"Done in {time.time() - started:.0f} seconds.")
     return counts
 
@@ -296,4 +331,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Rebuild the local database from the raw files.")
     parser.add_argument("--data-only", action="store_true", help="skip the forecast backtests")
-    build(run_backtests=not parser.parse_args().data_only)
+    parser.add_argument("--force", action="store_true", help="rebuild even if nothing has changed")
+    options = parser.parse_args()
+    build(run_backtests=not options.data_only, force=options.force)

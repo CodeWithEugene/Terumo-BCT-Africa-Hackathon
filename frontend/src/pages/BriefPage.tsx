@@ -75,7 +75,7 @@ export function BriefPage({
       )}
 
       {/* The answer first: one plain sentence, with one soft glow behind it */}
-      <section className="relative pt-2 pb-[clamp(1.500rem,4vw,3rem)]">
+      <section data-tour="brief-line" className="relative pt-2 pb-[clamp(1.500rem,4vw,3rem)]">
         <div
           className="pointer-events-none absolute -top-10 -left-16 h-64 w-[min(34rem,90vw)] rounded-full bg-sky-soft opacity-70 blur-3xl"
           aria-hidden="true"
@@ -125,7 +125,7 @@ export function BriefPage({
       </section>
 
       {/* The rack */}
-      <section aria-label={t.brief.groupsLabel}>
+      <section data-tour="rack" aria-label={t.brief.groupsLabel}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div role="tablist" aria-label="Product" className="inline-flex rounded-control border border-line bg-bg-alt p-1">
             {(brief?.components ?? [{ component: 'RBC' as Component, label: 'Red cells', held: true }]).map((c) => (

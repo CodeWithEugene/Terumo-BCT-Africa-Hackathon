@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useReducedMotion, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { Logo } from '../components/Shell'
 import { Tube, TubesBackdrop } from '../components/Tubes'
@@ -96,7 +96,10 @@ function Beat({ index, facts }: { index: number; facts: Facts }) {
 /** Desktop and tablet: a pinned stage. The headline changes per beat, the bag fills and tilts, tubes drift at different depths. */
 function ScrollStory({ facts }: { facts: Facts }) {
   const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  const { scrollYProgress: raw } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // A wheel or trackpad moves in steps. A spring between the scroll position and the motion
+  // turns those steps into one continuous movement (no bounce: it only smooths).
+  const scrollYProgress = useSpring(raw, { stiffness: 90, damping: 24, mass: 0.6, restDelta: 0.0005 })
   const level = useTransform(scrollYProgress, [0, 0.3, 0.62, 1], [0.12, 0.2, 0.62, 1])
   const tiltY = useTransform(scrollYProgress, [0, 0.5, 1], [-16, 6, -6])
   const tiltX = useTransform(scrollYProgress, [0, 1], [7, -3])
@@ -143,7 +146,7 @@ function ScrollStory({ facts }: { facts: Facts }) {
             ))}
           </div>
           <div className="flex justify-center" style={{ perspective: 1000 }}>
-            <motion.div className="h-[min(64vh,30rem)] w-[min(40vh,19rem)] drop-shadow-[0_30px_40px_rgba(20,27,77,0.12)]" style={{ rotateY: tiltY, rotateX: tiltX, transformStyle: 'preserve-3d' }}>
+            <motion.div className="h-[min(64vh,30rem)] w-[min(40vh,19rem)] will-change-transform drop-shadow-[0_30px_40px_rgba(20,27,77,0.12)]" style={{ rotateY: tiltY, rotateX: tiltX, transformStyle: 'preserve-3d' }}>
               <BloodBag level={level} />
             </motion.div>
           </div>
@@ -180,7 +183,7 @@ function StackedStory({ facts, still }: { facts: Facts; still: boolean }) {
   )
 }
 
-export default function Landing({ onSignedIn }: { onSignedIn: (user: User, mode: ModeInfo) => void }) {
+export default function Landing({ onSignedIn, onStartTour }: { onSignedIn: (user: User, mode: ModeInfo) => void; onStartTour: () => void }) {
   const reduce = useReducedMotion()
   const [facts, setFacts] = useState<Facts>({})
   const [wide, setWide] = useState(() => window.matchMedia('(min-width: 768px)').matches)
@@ -200,9 +203,15 @@ export default function Landing({ onSignedIn }: { onSignedIn: (user: User, mode:
             <Logo />
             <span className="text-[0.9375rem] font-semibold text-ink">{t.appName}</span>
           </span>
-          <a href="#sign-in" className="inline-flex min-h-11 items-center rounded-control bg-primary px-4 text-sm font-medium text-white no-underline hover:bg-[#0e1338]">
-            {t.landing.signIn}
-          </a>
+          <span className="flex items-center gap-2">
+            <button type="button" onClick={onStartTour} className="inline-flex min-h-11 items-center rounded-control bg-sky px-3 text-sm font-medium text-ink hover:bg-[#5db9e0] sm:px-4">
+              <span className="sm:hidden">{t.tour.startShort}</span>
+              <span className="hidden sm:inline">{t.tour.start}</span>
+            </button>
+            <a href="#sign-in" className="inline-flex min-h-11 items-center rounded-control bg-primary px-4 text-sm font-medium text-white no-underline hover:bg-[#0e1338]">
+              {t.landing.signIn}
+            </a>
+          </span>
         </div>
       </header>
 

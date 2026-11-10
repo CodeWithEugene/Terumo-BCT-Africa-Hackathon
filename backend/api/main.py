@@ -64,8 +64,30 @@ def demo_users() -> dict:
     world_names = service.get_world().facility["name"]
     return {**service.mode_info(), "users": [
         {"username": u["username"], "display_name": u["display_name"], "role": u["role"],
-         "role_label": access["roles"][u["role"]]["label"], "facility_name": world_names[u["facility_id"]],
-         "demo_password": u["demo_password"]} for u in access["demo_users"]]}
+         "role_label": access["roles"][u["role"]]["label"], "facility_name": world_names[u["facility_id"]]}
+        for u in access["demo_users"]]}
+
+
+class DemoLogin(BaseModel):
+    username: str = Field(max_length=64)
+
+
+@app.post("/api/demo-login", dependencies=[Depends(ready)])
+def demo_login(body: DemoLogin, response: Response) -> dict:
+    """One-tap sign-in to a test account. The password never leaves the server.
+
+    Works only for the accounts listed as demo users, and only while SP_DEMO_LOGINS is on.
+    """
+    names = {u["username"] for u in config.load_settings("access")["demo_users"]}
+    row = auth.find_user(username=body.username.strip().lower())
+    if not security.demo_logins_enabled() or body.username.strip().lower() not in names or row is None:
+        raise HTTPException(status_code=403, detail="Test accounts are switched off. Sign in with a name and password.")
+    user = User(row["user_id"], row["username"], row["display_name"], row["role"], row["facility_id"])
+    hours = config.load_settings("access")["session_hours"]
+    response.set_cookie(auth.COOKIE, auth.make_cookie(user.user_id), max_age=hours * 3600,
+                        httponly=True, samesite="lax", secure=security.cookie_secure())
+    service.audit(user, "sign_in")
+    return {**service.mode_info(), "user": service.user_card(user)}
 
 
 @app.post("/api/login", dependencies=[Depends(ready)])
