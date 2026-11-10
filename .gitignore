@@ -12,3 +12,5 @@ __pycache__/
 .venv/
 .pytest_cache/
 .DS_Store
+*.tsbuildinfo
+.vite/

@@ -1,0 +1,71 @@
+@import '@fontsource/hanken-grotesk/latin-400.css';
+@import '@fontsource/hanken-grotesk/latin-500.css';
+@import '@fontsource/hanken-grotesk/latin-600.css';
+@import 'tailwindcss';
+
+/*
+  Design tokens. Colour and type follow section 8 of docs/BUILD_PLAN.md.
+  Status colours follow docs/DESIGN.md. Use these names in components, not raw hex.
+*/
+@theme {
+  --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-bg: #ffffff;
+  --color-bg-alt: #f2f2f2;
+  --color-surface: #ffffff;
+  --color-line: #e3e5e8;
+  --color-ink: #141b4d;
+  --color-body: #595959;
+  --color-muted: #6b7280;
+  --color-primary: #141b4d;
+  --color-sky: #71c5e8;
+  --color-sky-soft: #d4eef8;
+
+  --color-steady: #1f6f54;
+  --color-steady-soft: #e6f4ee;
+  --color-watch: #8a5a0b;
+  --color-watch-soft: #fcf1d9;
+  --color-act: #a8322c;
+  --color-act-soft: #fbe8e6;
+  --color-fill-steady: #3fa07e;
+  --color-fill-watch: #b8821a;
+  --color-fill-act: #cf5a52;
+
+  --radius-card: 10px;
+  --radius-control: 8px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-body);
+    background: var(--color-bg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3 {
+    color: var(--color-ink);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
