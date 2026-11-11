@@ -1,0 +1,22 @@
+# Settings for hosting the backend on Render. Nothing is created until a person
+# connects this repo in the Render dashboard. Steps: docs/DEPLOY.md
+services:
+  - type: web
+    name: sanguis-providus-api
+    runtime: python
+    plan: standard
+    branch: main
+    buildCommand: pip install -r requirements.txt && python -m backend.pipeline.build
+    startCommand: uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: SP_COOKIE_SECURE
+        value: "1"
+      - key: SP_DEMO_LOGINS
+        value: "1"
+      - key: SP_SESSION_SECRET
+        generateValue: true
+      - key: SP_ALLOWED_ORIGINS
+        sync: false

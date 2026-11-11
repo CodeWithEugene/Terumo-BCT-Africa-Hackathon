@@ -1,0 +1,6 @@
+# Generated documents and code keep the same line endings on Windows and Linux.
+* text=auto eol=lf
+*.csv -text
+*.png binary
+*.woff binary
+*.woff2 binary
