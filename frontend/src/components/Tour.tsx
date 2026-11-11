@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { t } from '../i18n/en'
 import { Button } from './States'
 
@@ -10,23 +10,37 @@ let dragged: Point | null = null
 
 const clamp = (value: number, low: number, high: number) => Math.min(Math.max(value, low), Math.max(low, high))
 
-/** The corner where the card covers least of the part being shown. */
-function quietCorner(box: DOMRect | null, w: number, h: number): Point {
+/** The places the card may rest, for a card of this size. The first is the usual one. */
+function corners(w: number, h: number): Point[] {
   const wide = window.innerWidth >= 768
   const left = wide ? 220 : 12 // clear of the side rail
   const right = window.innerWidth - w - (wide ? 20 : 12)
   const top = 72 // clear of the top band
   const bottom = window.innerHeight - h - (wide ? 20 : 76) // clear of the bottom bar on phones
-  const corners: Point[] = [
+  const all: Point[] = [
     { x: right, y: bottom }, { x: right, y: top }, { x: left, y: bottom }, { x: left, y: top },
   ]
   // On a wide screen the card may also sit over the side menu, which the tour does not need.
-  if (wide) corners.push({ x: 12, y: bottom }, { x: 12, y: top })
-  if (!box) return corners[0]
+  if (wide) all.push({ x: 12, y: bottom }, { x: 12, y: top })
+  return all
+}
+
+/**
+ * Which resting place to use for a step. The card stays where it is unless it
+ * would cover the part being shown; then it goes to the place that covers least.
+ */
+function chooseCorner(now: number, box: DOMRect, w: number, h: number): number {
+  const all = corners(w, h)
   const covered = (c: Point) =>
     Math.max(0, Math.min(c.x + w, box.right) - Math.max(c.x, box.left)) *
     Math.max(0, Math.min(c.y + h, box.bottom) - Math.max(c.y, box.top))
-  return corners.reduce((best, c) => (covered(c) < covered(best) ? c : best))
+  const current = all[now] ?? all[0]
+  if (covered(current) <= 0.04 * w * h) return all[now] ? now : 0
+  let best = 0
+  all.forEach((c, i) => {
+    if (covered(c) < covered(all[best])) best = i
+  })
+  return best
 }
 
 export function readTourStep(): number | null {
@@ -73,6 +87,29 @@ export function Tour({
   const card = useRef<HTMLElement | null>(null)
   const [size, setSize] = useState({ w: 320, h: 190 })
   const [manual, setManual] = useState<Point | null>(dragged)
+  // The resting place is chosen once per step, after the screen has stopped moving.
+  const [corner, setCorner] = useState(0)
+  // A change of resting place glides from the old spot to the new one.
+  const lastRect = useRef<DOMRect | null>(null)
+  useLayoutEffect(() => {
+    const el = card.current
+    if (!el) return
+    const now = el.getBoundingClientRect()
+    const before = lastRect.current
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (before && !still && (before.left !== now.left || before.top !== now.top)) {
+      el.animate(
+        [{ transform: `translate(${before.left - now.left}px, ${before.top - now.top}px)` }, { transform: 'none' }],
+        { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corner])
+  useLayoutEffect(() => {
+    lastRect.current = card.current?.getBoundingClientRect() ?? null
+  })
+  const sizeNow = useRef(size)
+  sizeNow.current = size
   const [dragging, setDragging] = useState(false)
   const grip = useRef<{ dx: number; dy: number } | null>(null)
 
@@ -101,6 +138,7 @@ export function Tour({
     let live = true
     let timer: number | undefined
     let watcher: ResizeObserver | undefined
+    let settling: number | undefined
     target.current = null
     setBox(null)
     const run = async () => {
@@ -128,12 +166,22 @@ export function Tour({
             const fits = found.getBoundingClientRect().height <= window.innerHeight - 160
             found.scrollIntoView({ block: fits ? 'center' : 'start', behavior: reduce ? 'auto' : 'smooth' })
           }
-          show()
+          const settle = () => {
+            if (!live || !document.contains(found)) return
+            const { w, h } = sizeNow.current
+            setCorner((now) => chooseCorner(now, found.getBoundingClientRect(), w, h))
+          }
+          const showThenSettle = () => {
+            show()
+            window.clearTimeout(settling)
+            settling = window.setTimeout(settle, reduce ? 80 : 650) // after the scroll has finished
+          }
+          showThenSettle()
           // Again whenever the part changes size, for example when its numbers finish loading.
           watcher?.disconnect()
           watcher = new ResizeObserver(() => {
             window.clearTimeout(timer)
-            timer = window.setTimeout(show, 150)
+            timer = window.setTimeout(showThenSettle, 150)
           })
           watcher.observe(found)
           measure()
@@ -147,6 +195,7 @@ export function Tour({
     return () => {
       live = false
       watcher?.disconnect()
+      window.clearTimeout(settling)
       if (timer) window.clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,11 +232,17 @@ export function Tour({
   }, [step, steps.length, onStep])
 
   const last = step >= steps.length - 1
-  const spot = manual ?? quietCorner(box, size.w, size.h)
-  const place = {
-    left: clamp(spot.x, 8, window.innerWidth - size.w - 8),
-    top: clamp(spot.y, 8, window.innerHeight - size.h - 8),
-  }
+  // A resting place is pinned by its top or bottom edge, so longer or shorter text never shifts that edge.
+  const wide = window.innerWidth >= 768
+  const resting = corners(size.w, size.h)
+  const rest = resting[corner] ?? resting[0]
+  const low = rest.y > window.innerHeight / 3
+  const place: { left: number; top?: number; bottom?: number } = manual
+    ? {
+        left: clamp(manual.x, 8, window.innerWidth - size.w - 8),
+        top: clamp(manual.y, 8, window.innerHeight - size.h - 8),
+      }
+    : { left: clamp(rest.x, 8, window.innerWidth - size.w - 8), ...(low ? { bottom: wide ? 20 : 76 } : { top: 72 }) }
   return (
     <>
       {box && (
@@ -202,14 +257,20 @@ export function Tour({
         aria-label={t.tour.startShort}
         aria-live="polite"
         data-tour-card
-        className={`tour-card fixed z-50 w-[20rem] max-w-[calc(100vw-1rem)] min-w-[15rem] min-h-[9rem] max-h-[80vh] resize overflow-auto rounded-card border border-ink/35 bg-white/70 p-3.5 shadow-[0_8px_30px_rgba(20,27,77,0.16)] backdrop-blur-md backdrop-saturate-150 ${dragging ? '' : 'transition-[left,top] duration-200 ease-out motion-reduce:transition-none'}`}
+        className={`tour-card fixed z-50 w-[20rem] max-w-[calc(100vw-1rem)] min-w-[15rem] min-h-[9rem] max-h-[80vh] resize overflow-auto rounded-card border border-ink/35 bg-white/70 p-3.5 shadow-[0_8px_30px_rgba(20,27,77,0.16)] backdrop-blur-md backdrop-saturate-150`}
         style={place}
+        onPointerDownCapture={(event) => {
+          // Taking hold of the resize corner pins the card where it is, so it grows from that corner.
+          const rect = event.currentTarget.getBoundingClientRect()
+          if (!manual && event.clientX > rect.right - 24 && event.clientY > rect.bottom - 24) moveTo({ x: rect.left, y: rect.top })
+        }}
       >
         <p
           className={`-mx-1.5 -mt-1 flex touch-none items-center justify-between gap-3 rounded-md px-1.5 py-1 text-[0.6875rem] font-medium tracking-[0.08em] text-ink uppercase select-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           title={t.tour.move}
           onPointerDown={(event) => {
-            grip.current = { dx: event.clientX - place.left, dy: event.clientY - place.top }
+            const rect = card.current!.getBoundingClientRect()
+            grip.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top }
             event.currentTarget.setPointerCapture(event.pointerId)
             setDragging(true)
           }}
