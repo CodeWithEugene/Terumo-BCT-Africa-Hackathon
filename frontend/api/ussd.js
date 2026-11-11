@@ -7,5 +7,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Use POST.')
   if (!tokenOk(req)) return res.status(403).send('Not allowed.')
   const form = await readForm(req)
+  console.log('ussd hit', form.serviceCode || '', 'steps:', form.text || '(start)')
   res.status(200).send(await ussd(form.phoneNumber || '', form.text || ''))
 }
