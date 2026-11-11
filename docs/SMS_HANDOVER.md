@@ -1,5 +1,7 @@
 # SMS alerts: handover note for Eugene
 
+> Update: the Africa's Talking USSD menu and SMS are now built. See `docs/AFRICAS_TALKING.md`. The rules below still apply.
+
 What exists today is a **preview only**. The Brief page shows the day's alerts as one text message of at most
 160 characters, labelled "Demo, not sent". The regional view shows a draft donor call-out, also never sent.
 No message leaves the app and no phone numbers are stored.

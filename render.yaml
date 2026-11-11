@@ -20,3 +20,14 @@ services:
         generateValue: true
       - key: SP_ALLOWED_ORIGINS
         sync: false
+      # Africa's Talking. Set the values in the Render dashboard (docs/AFRICAS_TALKING.md).
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_CALLBACK_TOKEN
+        sync: false
+      - key: SP_STAFF_PHONES
+        sync: false
+      - key: SP_USSD_OPEN
+        value: "1"
