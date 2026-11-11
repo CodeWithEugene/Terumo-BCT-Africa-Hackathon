@@ -5,11 +5,12 @@ import threading
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from backend import config
-from backend.api import auth, security, service, standards
+from backend.api import at_gateway, auth, security, service, sms, standards, ussd
 from backend.api.auth import User, current_user
 from backend.config import APP_NAME, DB_PATH
 from backend.db.app_tables import ensure_app_tables, set_setting
@@ -22,6 +23,7 @@ async def lifespan(_: FastAPI):
         try:
             if table_exists("demand_daily"):
                 service.get_world()
+                service.snapshot(None)      # USSD must answer in seconds, so build today's picture before the first call
         except Exception:  # noqa: BLE001  (a failed warm-up must never stop the server)
             pass
 
@@ -240,3 +242,59 @@ def export_dhis2(user: User = Depends(current_user)) -> dict:
 @app.get("/api/privacy", dependencies=[Depends(ready)])
 def privacy(user: User = Depends(current_user)) -> dict:
     return service.privacy(user)
+
+
+# --- Africa's Talking: USSD and SMS ------------------------------------------------------
+# Callback addresses to paste into the Africa's Talking dashboard (see docs/AFRICAS_TALKING.md):
+#   USSD            POST /api/ussd
+#   Incoming SMS    POST /api/sms/incoming
+#   Delivery report POST /api/sms/delivery
+# Africa's Talking posts form data and does not sign it, so each address can carry ?token=<AT_CALLBACK_TOKEN>.
+
+@app.post("/api/ussd", dependencies=[Depends(ready)], response_class=PlainTextResponse)
+async def ussd_callback(request: Request) -> str:
+    """One step of the *384*11400# menu. The reply starts with CON (continue) or END (finish)."""
+    at_gateway.check_callback(request)
+    data = await at_gateway.form(request)
+    return ussd.handle(data.get("phoneNumber", ""), data.get("text", ""))
+
+
+@app.post("/api/sms/incoming", dependencies=[Depends(ready)], response_class=PlainTextResponse)
+async def sms_incoming(request: Request, background: BackgroundTasks) -> str:
+    """A staff member texted us. Answer by text, after replying 200 so the gateway is not kept waiting."""
+    at_gateway.check_callback(request)
+    data = await at_gateway.form(request)
+    sender = data.get("from", "")
+    if sender:
+        background.add_task(lambda: at_gateway.send_sms([sender], sms.reply_to(sender, data.get("text", ""))))
+    return "OK"
+
+
+@app.post("/api/sms/delivery", dependencies=[Depends(ready)], response_class=PlainTextResponse)
+async def sms_delivery(request: Request) -> str:
+    """Africa's Talking tells us whether a text we sent reached the phone. Logged without the phone number."""
+    at_gateway.check_callback(request)
+    data = await at_gateway.form(request)
+    service.audit(None, "sms_delivery_report", note=f"{data.get('status', 'unknown')} {data.get('failureReason', '')}".strip()[:200],
+                  decided={"message_id": data.get("id")})
+    return "OK"
+
+
+class SmsSend(BaseModel):
+    facility_id: str = Field(max_length=32)
+    confirm: bool = False
+
+
+@app.post("/api/sms/send", dependencies=[Depends(ready)])
+def sms_send(body: SmsSend, user: User = Depends(current_user)) -> dict:
+    """Send the day's staff alert to the hospital's registered phones. The text is rebuilt here and a person must confirm."""
+    if not body.confirm:
+        raise HTTPException(status_code=422, detail="A person must approve the message before it is sent.")
+    return {**service.mode_info(), **sms.send_alert(user, body.facility_id)}
+
+
+@app.get("/api/sms/status", dependencies=[Depends(ready)])
+def sms_status(user: User = Depends(current_user)) -> dict:
+    """Whether sending is set up. Shows no keys and no phone numbers."""
+    return {"configured": at_gateway.configured(), "staff_phones": len(at_gateway.staff_phones()),
+            "open_lookup": at_gateway.open_lookup()}
