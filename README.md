@@ -54,7 +54,7 @@ where each week's units go.
   - **Calendar:** school terms, public holidays and malaria months are settings read from the data and the
     Kenyan calendar, to be confirmed for each deployment.
 
-Demo video (3 minutes or less): to add (script in `docs/DEMO_SCRIPT.md`)
+Demo video (3 minutes or less): to add
 Live demo: https://sanguis-providus.vercel.app (how it is hosted: `docs/DEPLOY.md`)
 
 Test log-ins (demo accounts): press **Sign in** and choose a role, or sign in by name and password:
@@ -195,7 +195,7 @@ The donor table is not in this repo and is never loaded. No real donor, patient 
 | Design skill packs for Claude Code: impeccable (pbakaus), taste-skill (Leonxlnx), skills (emilkowalski) | Checklists for one design pass: contrast, touch behaviour, interaction states, motion. They are instruction documents; none of their files are in this repo. |
 | Gemini and ChatGPT | Background research on existing blood-service tools and the supply-chain literature. Claims were checked against sources and against our own data before use. |
 
-The team set the plan and the rules (`docs/BUILD_PLAN.md`, `CLAUDE.md`), chose the problem and the design
+The team set the build plan and the working rules, chose the problem and the design
 direction, checked the data findings, ran and reviewed each step, and can explain the code. No language model
 runs inside the product: forecasts are statistical models and the reasons are written by templates.
 
