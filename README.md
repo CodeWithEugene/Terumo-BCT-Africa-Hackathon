@@ -43,25 +43,17 @@ where each week's units go.
   - **Works offline.** The tool runs on one computer with a local database, and the browser keeps the last brief.
   - **Data & privacy page**, role-based access, and no donor or patient identities anywhere in the system.
   - **Standards:** an accepted order as a FHIR R4-shaped `SupplyRequest`, and a DHIS2-shaped monthly export.
-  - **USSD and SMS on any phone.** Dial `*384*11400#` (Africa's Talking) to read today's alert, the cover for each
-    blood group and the suggested orders, with no internet or app. Staff can also text ALERT, COVER O-, ORDERS or
-    HOSPITALS and get a reply of 160 characters or fewer. Staff phones open on their own hospital, other phones get a
-    view-only look-up. Setup and screens are in `docs/AFRICAS_TALKING.md`.
   - **Central copy** in Oracle Autonomous Database (see Architecture).
   - **Landing page and guided tour:** 13 short steps through every main feature.
 - What is mocked or not finished:
-  - **USSD and SMS:** tested in the Africa's Talking sandbox only, not on a live network. Accepting or changing an
-    order stays in the app, because it needs a signed-in person and a reason. The hosted USSD runs as Vercel
-    functions from precomputed data (branch `ussd-vercel`), so its numbers refresh only when the export script is rerun.
-  - **Donor call-out:** the draft is a preview, labelled "Demo, not sent". A donor message needs donor contact
-    details and consent, which this tool deliberately does not hold (`docs/SMS_HANDOVER.md`).
+  - **SMS:** the alert text and the donor call-out are previews, labelled "Demo, not sent". Sending through a
+    gateway, with a person approving each message, is planned in `docs/SMS_HANDOVER.md`.
   - **FHIR and DHIS2:** field names follow the HL7 R4 specification, and the output has not been run through
     a FHIR validator. Product codes are local stand-ins for ISBT 128 codes, and DHIS2 identifiers are
     illustrative.
   - **Calendar:** school terms, public holidays and malaria months are settings read from the data and the
     Kenyan calendar, to be confirmed for each deployment.
 
-Demo video (3 minutes or less): to add
 Live demo: https://sanguis-providus.vercel.app (how it is hosted: `docs/DEPLOY.md`)
 
 Test log-ins (demo accounts): press **Sign in** and choose a role, or sign in by name and password:
@@ -125,10 +117,6 @@ On a slow connection, install with `pip install --default-timeout=120 --retries 
   browser shows the last brief with a banner.
 - **Where this sits in a blood-bank information system:** it reads counts (stock, requests, deliveries,
   drives) and hands back approved orders. It is a planning layer beside the system of record.
-- **USSD and SMS:** Africa's Talking calls three addresses (`/api/ussd`, `/api/sms/incoming`, `/api/sms/delivery`).
-  Each USSD key press is a new request, so the screen is rebuilt from the typed path every time. A staff phone is
-  matched to a login from settings, never stored in the database, and sending an alert needs a person to confirm
-  and is written to the audit log.
 - **Standards:** FHIR R4 `SupplyRequest` for orders, DHIS2 `dataValueSet` for monthly indicators, and the
   dataset's unit label in the place of an ISBT 128 donation number. The mapping is in `docs/STANDARDS.md`.
 
@@ -189,8 +177,6 @@ The donor table is not in this repo and is never loaded. No real donor, patient 
   keeps the last brief and shows it with a banner when the server cannot be reached. The working screens are
   still and light, about 150 KB of compressed script, for slow links.
 - **Phones:** every screen works at 360 pixels wide, with a bottom navigation bar and 44-pixel touch targets.
-- **Basic phones:** the USSD menu and SMS replies need no data connection and no smartphone, so a blood bank officer
-  can read the day's alert on any handset.
 - **Languages:** every sentence a user reads is in one file (`frontend/src/i18n/en.ts`), so a language can be
   added without touching screens. The privacy notice is in English and Swahili.
 - **Another site or country:** school terms, public holidays and malaria months are in
@@ -204,11 +190,11 @@ The donor table is not in this repo and is never loaded. No real donor, patient 
 ## AI tools we used
 | Tool | What we used it for |
 | --- | --- |
-| Claude Code (Anthropic) | Writing and testing the code in this repo during the hackathon, under the team's direction: the data pipeline, forecasts, API, web app, USSD and SMS integration, tests and documentation drafts. It also checked the screens with screenshots. |
+| Claude Code (Anthropic) | Writing and testing the code in this repo during the hackathon, under the team's direction: the data pipeline, forecasts, API, web app, tests and documentation drafts. It also checked the screens with screenshots. |
 | Design skill packs for Claude Code: impeccable (pbakaus), taste-skill (Leonxlnx), skills (emilkowalski) | Checklists for one design pass: contrast, touch behaviour, interaction states, motion. They are instruction documents; none of their files are in this repo. |
 | Gemini and ChatGPT | Background research on existing blood-service tools and the supply-chain literature. Claims were checked against sources and against our own data before use. |
 
-The team set the build plan and the working rules, chose the problem and the design
+The team set the plan and the rules (`docs/BUILD_PLAN.md`, `CLAUDE.md`), chose the problem and the design
 direction, checked the data findings, ran and reviewed each step, and can explain the code. No language model
 runs inside the product: forecasts are statistical models and the reasons are written by templates.
 
@@ -217,7 +203,7 @@ runs inside the product: forecasts are statistical models and the reasons are wr
 |------|------|---------|-----------------------------------------|
 | Linet Mugwanja | Build lead and data lead | Kenya | to confirm |
 | Jael Wainaina | Research and product | Kenya | to confirm |
-| Eugene Mutembei | Integration (USSD and SMS) | Kenya | to confirm |
+| Eugene Mutembei | Integration (SMS alerts) | Kenya | to confirm |
 | Washington Adiado | Team member | Kenya | to confirm |
 | Trixy Wangui Wainaina | Team member | Kenya | to confirm |
 
